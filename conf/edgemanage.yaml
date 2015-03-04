@@ -1,0 +1,19 @@
+---
+testobject:
+  host: deflect.ca
+  proto: https
+  uri: /edgemanage.object
+  local: ../..//edgemanage.object
+
+healthdata_store: /var/lib/edgemanage/health.data
+# To be suffixed with {{dnet}} and {{dnet}}.live
+edgelist_dir: /tmp/edges/
+dnschange_maxfreq: 10
+# Number of retries when fetching the object from an edge
+retry: 3
+goodenough: 500
+logpath: /var/log/edgemanage.log
+rotationhistory_store: /var/edgemanage/rotation_history
+soa_template: /usr/local/edgemanage/soa_template
+zonetemplate_dir: /usr/local/deflect/etc/zones
+# More stuff
