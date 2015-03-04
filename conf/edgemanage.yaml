@@ -3,7 +3,7 @@ testobject:
   host: deflect.ca
   proto: https
   uri: /edgemanage.object
-  local: ../..//edgemanage.object
+  local: ../edgemanage.object
 
 healthdata_store: /var/lib/edgemanage/health.data
 # To be suffixed with {{dnet}} and {{dnet}}.live

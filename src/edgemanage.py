@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
-import const
-import edgetest
+from edgemanage import const
+from edgemanage import edgetest
 
 import os
 import yaml
 import argparse
 import hashlib
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+def future_fetch(edgetest, testobject_host, testobject_path, testobject_proto):
+    return {edgetest.edgename: edgetest.fetch(testobject_host, testobject_path, testobject_proto)}
 
 def main(dnet, dry_run, verbose, config):
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
@@ -21,9 +25,17 @@ def main(dnet, dry_run, verbose, config):
     with open(config["testobject"]["local"]) as test_local_f:
         testobject_hash = hashlib.md5(test_local_f.read()).hexdigest()
 
-    for edgename in edge_list:
-        edge_t = edgetest.EdgeTest(edgename, testobject_hash)
-        time_taken = edge_t.fetch(testobject_host, testobject_path, testobject_proto)
+    edgescore_futures = []
+
+    with ProcessPoolExecutor() as executor:
+        for edgename in edge_list:
+            edge_t = edgetest.EdgeTest(edgename, testobject_hash)
+            edgescore_futures.append(executor.submit(future_fetch, edge_t, testobject_host, testobject_path, testobject_proto))
+
+    resultdict = {}
+    for f in as_completed(edgescore_futures):
+        resultdict.update(f.result())
+    for edgename, time_taken in resultdict.iteritems():
         print "Time for %s - %f" % (edgename, time_taken)
 
 if __name__ == "__main__":
