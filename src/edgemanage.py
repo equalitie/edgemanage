@@ -9,7 +9,9 @@ import argparse
 import hashlib
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+
 def future_fetch(edgetest, testobject_host, testobject_path, testobject_proto):
+    """Helper function to give us a return value that plays nice with as_completed"""
     return {edgetest.edgename: edgetest.fetch(testobject_host, testobject_path, testobject_proto)}
 
 def main(dnet, dry_run, verbose, config):
@@ -34,9 +36,16 @@ def main(dnet, dry_run, verbose, config):
 
     resultdict = {}
     for f in as_completed(edgescore_futures):
-        resultdict.update(f.result())
-    for edgename, time_taken in resultdict.iteritems():
-        print "Time for %s - %f" % (edgename, time_taken)
+        try:
+            result = f.result()
+        except requests.exceptions.ConnectionError as e:
+            # Couldn't connect - Failed
+            raise
+        except Exception as e:
+            # Do some shit here
+            raise
+        resultdict.update(result)
+        print "Time for %s - %f" % (result.keys()[0], result.values()[0])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Manage Deflect edge status.')
