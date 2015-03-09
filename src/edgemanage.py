@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 from edgemanage import const
-from edgemanage import edgetest
+from edgemanage import EdgeTest
+from edgemanage import StatStore
 
 import os
 import yaml
 import argparse
+import logging
 import hashlib
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -31,31 +33,35 @@ def main(dnet, dry_run, verbose, config):
     # Hash the local copy of the object to be requested from the edges
     with open(config["testobject"]["local"]) as test_local_f:
         testobject_hash = hashlib.md5(test_local_f.read()).hexdigest()
-        if verbose:
-            print "Hash of local object %s is %s" % (config["testobject"]["local"],
-                                                     testobject_hash)
+        logging.info("Hash of local object %s is %s" % (config["testobject"]["local"],
+                                                        testobject_hash))
 
     edgescore_futures = []
 
     with ProcessPoolExecutor() as executor:
         for edgename in edge_list:
-            edge_t = edgetest.EdgeTest(edgename, testobject_hash)
-            edgescore_futures.append(executor.submit(future_fetch, edge_t, testobject_host, testobject_path, testobject_proto))
+            edge_t = EdgeTest(edgename, testobject_hash)
+            edgescore_futures.append(executor.submit(future_fetch,
+                                                     edge_t, testobject_host,
+                                                     testobject_path,
+                                                     testobject_proto))
 
     resultdict = {}
     for f in as_completed(edgescore_futures):
         try:
             result = f.result()
-        except requests.exceptions.ConnectionError as e:
-            # Couldn't connect - Failed
-
         except Exception as e:
             # Do some shit here
             raise
         edge, value = result.items()[0]
-        print "Time for %s - %f" % (edge, value)
+        stat_store = StatStore(edge, config["healthdata_store"])
+        stat_store.add_value(value)
+
+        logging.info("Fetch time for %s: %f avg: %f" % (edge, value, stat_store.current_average()))
 
 if __name__ == "__main__":
+    # TODO add locking
+
     parser = argparse.ArgumentParser(description='Manage Deflect edge status.')
     parser.add_argument("--dnet", "-A", dest="dnet", action="store",
                         help="Specify DNET (mandatory)")
@@ -70,6 +76,15 @@ if __name__ == "__main__":
 
     with open(args.config_path) as config_f:
         config = yaml.safe_load(config_f.read())
+
+    logger = logging.getLogger()
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+        handler = logging.StreamHandler() # log to STDERR
+        handler.setFormatter(
+            logging.Formatter('edgemanage [%(process)d] %(levelname)s %(message)s')
+        )
+        logger.addHandler(handler)
 
     if not args.dnet:
         raise AttributeError("DNET is a mandatory option")
