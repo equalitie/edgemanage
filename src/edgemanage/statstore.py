@@ -3,6 +3,7 @@ import json
 import time
 import logging
 import datetime
+import copy
 
 from const import FETCH_HISTORY
 
@@ -28,8 +29,9 @@ class StatStore(object):
 
         self.edgename = edgename
         self.statfile = os.path.join(store_dir, "%s.edgestore" % edgename)
-        if os.path.isfile(self.statfile):
-            stat_info = json.load(self.statfile)
+        if os.path.isfile(self.statfile) and os.path.getsize(self.statfile) != 0:
+            with open(self.statfile) as statfile_f:
+                stat_info = json.load(statfile_f)
             for val_key, val_type in ASSUMED_VALS.iteritems():
                 # Set self attributes for all dict vals in the stat
                 # store.
@@ -43,12 +45,21 @@ class StatStore(object):
                     # database migration for flat files :)
                     logging.error("Edgefile %s lacks %s, assuming %s", self.statfile,
                                   val_key, str(val_type))
-                    setattr(self, val_key, val_type)
+                    setattr(self, val_key, copy.copy(val_type))
         else:
             # There is no stat file, just load empty assumed vals
             logging.warning("Initialising previously untracked edge %s", self.edgename)
             for val_key, val_type in ASSUMED_VALS.iteritems():
-                setattr(self, val_key, val_type)
+                setattr(self, val_key, copy.copy(val_type))
+
+    def _dump(self):
+        ''' Write out stat data to file '''
+        output = {}
+
+        for val_key, val_type in ASSUMED_VALS.iteritems():
+            output[val_key] = getattr(self, val_key)
+        with open(self.statfile, "w") as statfile_f:
+            json.dump(output, statfile_f)
 
     def current_average(self):
         ''' Return an average of the current live set of values '''
@@ -70,14 +81,17 @@ class StatStore(object):
         # prune our values if there's too many of them
         if len(self.fetch_times) > FETCH_HISTORY:
             min_value = sorted(self.fetch_times.keys())[0]
+            logging.debug("Rotating out item with timestamp %f due to fetch cache being over %d items",
+                          min_value, FETCH_HISTORY)
             del(self.fetch_times[min_value])
 
         the_time_datetime = datetime.datetime.utcfromtimestamp(the_time)
-        if the_time_datetime.minute == 0 and the_time_datetime.hour == 0:
+        if the_time_datetime.minute == 0:
             # prune our values if there's too many of them
             if len(self.historical_average) > FETCH_HISTORY:
                 min_value = sorted(self.historical_average.keys())[0]
                 del(self.historical_average[min_value])
             self.historical_average[the_time] = self.current_average()
 
+        self._dump()
         return the_time
