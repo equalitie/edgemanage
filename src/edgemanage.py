@@ -9,12 +9,16 @@ import argparse
 import hashlib
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-
 def future_fetch(edgetest, testobject_host, testobject_path, testobject_proto):
     """Helper function to give us a return value that plays nice with as_completed"""
-    return {edgetest.edgename: edgetest.fetch(testobject_host, testobject_path, testobject_proto)}
+
+    fetch_result = edgetest.fetch(testobject_host, testobject_path, testobject_proto)
+    return {edgetest.edgename: fetch_result}
 
 def main(dnet, dry_run, verbose, config):
+    # Read the edgelist as a flat file
+    # TODO have the option to check the file for YAML and then default to
+    # flat list.
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [ i for i in edge_f.read().split("\n") if i.strip() ]
     if verbose:
@@ -24,8 +28,12 @@ def main(dnet, dry_run, verbose, config):
     testobject_host = config["testobject"]["host"]
     testobject_path = config["testobject"]["uri"]
 
+    # Hash the local copy of the object to be requested from the edges
     with open(config["testobject"]["local"]) as test_local_f:
         testobject_hash = hashlib.md5(test_local_f.read()).hexdigest()
+        if verbose:
+            print "Hash of local object %s is %s" % (config["testobject"]["local"],
+                                                     testobject_hash)
 
     edgescore_futures = []
 
@@ -40,12 +48,12 @@ def main(dnet, dry_run, verbose, config):
             result = f.result()
         except requests.exceptions.ConnectionError as e:
             # Couldn't connect - Failed
-            raise
+
         except Exception as e:
             # Do some shit here
             raise
-        resultdict.update(result)
-        print "Time for %s - %f" % (result.keys()[0], result.values()[0])
+        edge, value = result.items()[0]
+        print "Time for %s - %f" % (edge, value)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Manage Deflect edge status.')
