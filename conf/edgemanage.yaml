@@ -5,6 +5,13 @@ testobject:
   uri: /edgemanage.object
   local: ../edgemanage.object
 
+dns:
+  ns_records:
+    - adns1.easydns.com.
+    - adns2.easydns.com.
+  soa_nameserver: dns0.easydns.com.
+  soa_mailbox: zone.easydns.com.
+
 healthdata_store: /var/lib/edgemanage/health.data
 # To be suffixed with {{dnet}} and {{dnet}}.live
 edgelist_dir: /tmp/edges/
