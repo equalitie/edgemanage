@@ -48,18 +48,46 @@ class EdgeTest(object):
          fetch_host: The Host header to use when fetching
          fetch_object: The path to the object to be fetched
         """
-        response = requests.get(urlparse.urljoin(proto + "://" + self.edgename,
-                                                 fetch_object),
-                                verify=False,
-                                timeout=const.FETCH_TIMEOUT,
-                                headers = {"Host": fetch_host})
+        try:
+            response = requests.get(urlparse.urljoin(proto + "://" + self.edgename,
+                                                     fetch_object),
+                                    verify=False,
+                                    timeout=const.FETCH_TIMEOUT,
+                                    headers = {"Host": fetch_host})
+        except requests.exceptions.Timeout as e:
+            # Just assume it took the maximum amount of time
+            return const.FETCH_TIMEOUT
+        except requests.exceptions.ConnectionError as e:
+            logging.error("Connection error when fetching from %s: %s", self.edgename, str(e))
+            for i in range(const.FETCH_RETRY-1):
+                logging.warning("Retrying connection to %s", self.edgename)
+                try:
+                    response = requests.get(urlparse.urljoin(proto + "://" + self.edgename,
+                                                             fetch_object),
+                                            verify=False,
+                                            timeout=const.FETCH_TIMEOUT,
+                                            headers = {"Host": fetch_host})
+                    # Request was successful, stop retrying and
+                    # continue
+                    break
+                except requests.exceptions.ConnectionError as e:
+                    continue
+            else:
+                logging.error("Failed to connect to %s after retrying %d times",
+                              self.edgename, const.FETCH_RETRY)
+                # The loop finished without a break - we got more
+                # connection errors. Let's bail and return the maximum
+                # amount of time. for/else is weird.
+                return const.FETCH_TIMEOUT
 
         if not response.ok:
+            logging.error("Object fetch failed on %s", self.edgename)
             raise FetchFailed(self, fetch_host,
                               fetch_object, response.text)
 
         remote_hash = hashlib.md5(response.text).hexdigest()
         if remote_hash != self.local_sum:
+            logging.error("Failed to verify hash on %s!!", self.edgename)
             raise VerifyFailed(self, fetch_host,
                                fetch_object, remote_hash)
 
