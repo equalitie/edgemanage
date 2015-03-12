@@ -8,6 +8,9 @@ import const
 # external
 import requests
 
+USER_AGENT="Edgemanage v2 (https://github.com/equalitie/edgemanage)"
+
+
 class EdgeException(Exception):
     def __init__(self, message, edgetest,
                  fetch_host, fetch_object):
@@ -53,7 +56,8 @@ class EdgeTest(object):
                                                      fetch_object),
                                     verify=False,
                                     timeout=const.FETCH_TIMEOUT,
-                                    headers = {"Host": fetch_host})
+                                    headers = {"Host": fetch_host,
+                                               "User-Agent": USER_AGENT})
         except requests.exceptions.Timeout as e:
             # Just assume it took the maximum amount of time
             return const.FETCH_TIMEOUT
