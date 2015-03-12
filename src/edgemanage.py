@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from edgemanage import const, EdgeTest, StatStore
+from edgemanage import const, EdgeTest, StatStore, DecisionMaker
 
 import os
 import yaml
@@ -33,7 +33,7 @@ def main(dnet, dry_run, verbose, config):
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [ i for i in edge_f.read().split("\n") if i.strip() ]
     if verbose:
-        print "Edge list is %s" % str(edge_list)
+        logging.info("Edge list is %s", str(edge_list))
 
     testobject_proto = config["testobject"]["proto"]
     testobject_host = config["testobject"]["host"]
@@ -55,6 +55,7 @@ def main(dnet, dry_run, verbose, config):
                                                      testobject_path,
                                                      testobject_proto))
 
+    decision = DecisionMaker()
     resultdict = {}
     for f in as_completed(edgescore_futures):
         try:
@@ -65,8 +66,11 @@ def main(dnet, dry_run, verbose, config):
         edge, value = result.items()[0]
         stat_store = StatStore(edge, config["healthdata_store"], nowrite=dry_run)
         stat_store.add_value(value)
-
         logging.info("Fetch time for %s: %f avg: %f" % (edge, value, stat_store.current_average()))
+
+        decision.add_stat_store(stat_store)
+        decision.check_threshold(config["goodenough"])
+
 
 if __name__ == "__main__":
 

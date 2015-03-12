@@ -73,6 +73,20 @@ class StatStore(object):
         ''' Return the number of values for fetch times we have '''
         return len(self.fetch_times)
 
+    def __getitem__(self, index):
+        '''Return the datetime at a given timestamp - or return a slice of
+        dates between two timestamps
+        '''
+        if isinstance(index, slice):
+            return_dict = {}
+            for key, val in self.fetch_times.iteritems():
+                if key >= index.start and key <= index.stop:
+                    return_dict[key] = val
+
+            return return_dict
+        else:
+            return self.fetch_times[index]
+
     def last_value(self):
         ''' Get the most recent value stored '''
         return self.fetch_times[max(self.fetch_times)]
