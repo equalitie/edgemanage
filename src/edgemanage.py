@@ -1,15 +1,24 @@
 #!/usr/bin/env python
 
-from edgemanage import const
-from edgemanage import EdgeTest
-from edgemanage import StatStore
+from edgemanage import const, EdgeTest, StatStore
 
 import os
 import yaml
 import argparse
 import logging
 import hashlib
+import fcntl
 from concurrent.futures import ProcessPoolExecutor, as_completed
+
+def acquire_lock(lockfile):
+    fp = open(lockfile, 'w')
+
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        return False
+
+    return True
 
 def future_fetch(edgetest, testobject_host, testobject_path, testobject_proto):
     """Helper function to give us a return value that plays nice with as_completed"""
@@ -54,13 +63,12 @@ def main(dnet, dry_run, verbose, config):
             # Do some shit here
             raise
         edge, value = result.items()[0]
-        stat_store = StatStore(edge, config["healthdata_store"])
+        stat_store = StatStore(edge, config["healthdata_store"], nowrite=dry_run)
         stat_store.add_value(value)
 
         logging.info("Fetch time for %s: %f avg: %f" % (edge, value, stat_store.current_average()))
 
 if __name__ == "__main__":
-    # TODO add locking
 
     parser = argparse.ArgumentParser(description='Manage Deflect edge status.')
     parser.add_argument("--dnet", "-A", dest="dnet", action="store",
@@ -88,4 +96,8 @@ if __name__ == "__main__":
 
     if not args.dnet:
         raise AttributeError("DNET is a mandatory option")
-    main(args.dnet, args.dryrun, args.verbose, config)
+
+    if not acquire_lock(config["lockfile"]):
+        raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")
+    else:
+        main(args.dnet, args.dryrun, args.verbose, config)

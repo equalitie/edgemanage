@@ -20,7 +20,7 @@ ASSUMED_VALS={
 
 class StatStore(object):
 
-    def __init__(self, edgename, store_dir):
+    def __init__(self, edgename, store_dir, nowrite=False):
         '''An object representing a simple set of time series data,
         backed by a local JSON file store
 
@@ -28,6 +28,7 @@ class StatStore(object):
         '''
 
         self.edgename = edgename
+        self.nowrite = nowrite
         self.statfile = os.path.join(store_dir, "%s.edgestore" % edgename)
         if os.path.isfile(self.statfile) and os.path.getsize(self.statfile) != 0:
             with open(self.statfile) as statfile_f:
@@ -56,6 +57,9 @@ class StatStore(object):
         ''' Write out stat data to file '''
         output = {}
 
+        if self.nowrite:
+            logging.debug("Not writing %s because nowrite=True", self.statfile)
+
         for val_key, val_type in ASSUMED_VALS.iteritems():
             output[val_key] = getattr(self, val_key)
         with open(self.statfile, "w") as statfile_f:
@@ -68,6 +72,10 @@ class StatStore(object):
     def __len__(self):
         ''' Return the number of values for fetch times we have '''
         return len(self.fetch_times)
+
+    def last_value(self):
+        ''' Get the most recent value stored '''
+        return self.fetch_times[max(self.fetch_times)]
 
     def add_value(self, new_value):
         '''Add a new value to the fetch times store and check if we
