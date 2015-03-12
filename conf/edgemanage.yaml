@@ -12,8 +12,8 @@ dns:
   soa_nameserver: dns0.easydns.com.
   soa_mailbox: zone.easydns.com.
 
-healthdata_store: /var/lib/edgemanage/healthdata/
-#healthdata_store: /tmp/health
+#healthdata_store: /var/lib/edgemanage/healthdata/
+healthdata_store: /tmp/health
 # To be suffixed with {{dnet}} and {{dnet}}.live
 edgelist_dir: /tmp/edges/
 dnschange_maxfreq: 10
@@ -21,7 +21,7 @@ dnschange_maxfreq: 10
 retry: 3
 goodenough: 500
 logpath: /var/log/edgemanage.log
-lockfile: /var/lock/edgemanage.lock
+lockfile: /tmp/edgemanage.lock
 rotationhistory_store: /var/edgemanage/rotation_history
 soa_template: /usr/local/edgemanage/soa_template
 zonetemplate_dir: /usr/local/deflect/etc/zones
