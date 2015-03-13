@@ -69,7 +69,7 @@ def main(dnet, dry_run, verbose, config):
         logging.info("Fetch time for %s: %f avg: %f" % (edge, value, stat_store.current_average()))
 
         decision.add_stat_store(stat_store)
-        decision.check_threshold(config["goodenough"])
+    decision.check_threshold(config["goodenough"])
 
 
 if __name__ == "__main__":
