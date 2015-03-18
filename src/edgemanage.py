@@ -1,14 +1,30 @@
 #!/usr/bin/env python
 
-from edgemanage import const, EdgeTest, StatStore, DecisionMaker
+from edgemanage import const, EdgeTest, StatStore, DecisionMaker, StateFile
 
+import json
+import time
 import os
+import sys
 import yaml
 import argparse
 import logging
 import hashlib
 import fcntl
+import pprint
 from concurrent.futures import ProcessPoolExecutor, as_completed
+
+def nagios_output(lastrotation):
+    time_now = time.time()
+    nagios_status = "OK"
+    if lastrotation:
+        nagios_message = "Last rotation was %d ago" % (time_now - lastrotation)
+    if not lastrotation:
+        nagios_status = "UNKNOWN"
+        nagios_message = "No last rotation time"
+    elif (time_now - lastrotation) < const.NAGIOS_WARNING_TIME:
+        nagios_status = "WARNING"
+    return "EDGEMANAGE %s - %s" % (nagios_status, nagios_message)
 
 def acquire_lock(lockfile):
     fp = open(lockfile, 'w')
@@ -26,7 +42,14 @@ def future_fetch(edgetest, testobject_host, testobject_path, testobject_proto):
     fetch_result = edgetest.fetch(testobject_host, testobject_path, testobject_proto)
     return {edgetest.edgename: fetch_result}
 
-def main(dnet, dry_run, verbose, config):
+def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
+
+    time_now = time.time()
+    if state_obj.last_run and not dry_run and int(state_obj.last_run) + 59 > int(time_now):
+        logging.error("Can't run - last run was %d, current time is %d",
+                      state_obj.last_run, time_now)
+        sys.exit(1)
+
     # Read the edgelist as a flat file
     # TODO have the option to check the file for YAML and then default to
     # flat list.
@@ -56,7 +79,7 @@ def main(dnet, dry_run, verbose, config):
                                                      testobject_proto))
 
     decision = DecisionMaker()
-    resultdict = {}
+
     for f in as_completed(edgescore_futures):
         try:
             result = f.result()
@@ -71,6 +94,8 @@ def main(dnet, dry_run, verbose, config):
         decision.add_stat_store(stat_store)
     decision.check_threshold(config["goodenough"])
 
+    if do_nagios_output:
+        print nagios_output(state_obj.last_rotation())
 
 if __name__ == "__main__":
 
@@ -80,6 +105,8 @@ if __name__ == "__main__":
     parser.add_argument("--config", "-c", dest="config_path", action="store",
                         help="Path to configuration file (defaults to %s)" % const.CONFIG_PATH,
                         default=const.CONFIG_PATH)
+    parser.add_argument("--nagios", "-N", dest="nagios", action="store_true",
+                        help="Nagios-friendly output", default=False)
     parser.add_argument("--dry-run", "-n", dest="dryrun", action="store_true",
                         help="Dry run - don't generate any files", default=False)
     parser.add_argument("--verbose", "-v", dest="verbose", action="store_true",
@@ -98,10 +125,22 @@ if __name__ == "__main__":
         )
         logger.addHandler(handler)
 
+    logging.debug("Command line options are %s", str(args))
+    logging.debug("Full configuration is:\n %s", pprint.pformat(config))
+
     if not args.dnet:
         raise AttributeError("DNET is a mandatory option")
+
+    state = StateFile()
+    if os.path.exists(config["statefile"]):
+        with open(config["statefile"]) as statefile_f:
+            state = StateFile(json.loads(statefile_f.read()))
 
     if not acquire_lock(config["lockfile"]):
         raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")
     else:
-        main(args.dnet, args.dryrun, args.verbose, config)
+        main(args.dnet, args.dryrun, args.verbose, args.nagios, config, state)
+    state.set_last_run()
+    if not args.dryrun:
+        with open(config["statefile"], "w") as statefile_f:
+            statefile_f.write(state.to_json())

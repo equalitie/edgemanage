@@ -14,3 +14,7 @@ FETCH_HISTORY=2000
 # more accurate average than simply averaging the last FETCH_HISTORY
 # entries.
 DECISION_SLICE_WINDOW=300
+
+# Amount of time within which to check for a rotation in order to
+# change Nagios state to WARNING.
+NAGIOS_WARNING_TIME = 300
