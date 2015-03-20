@@ -18,3 +18,10 @@ DECISION_SLICE_WINDOW=300
 # Amount of time within which to check for a rotation in order to
 # change Nagios state to WARNING.
 NAGIOS_WARNING_TIME = 300
+
+# Number of historical rotations to keep in the state file.
+STATE_HISTORICAL_ROTATIONS = 10
+
+# Upper domain to use for looking up IP addresses of edges while
+# populating zone files
+UPPER_DOMAIN="deflect.ca"

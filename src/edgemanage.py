@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-from edgemanage import const, EdgeTest, StatStore, DecisionMaker, StateFile
+from edgemanage import const, EdgeTest, StatStore, DecisionMaker, StateFile, EdgeList
 
 import json
 import time
 import os
 import sys
+import random
 import yaml
 import argparse
 import logging
@@ -13,6 +14,31 @@ import hashlib
 import fcntl
 import pprint
 from concurrent.futures import ProcessPoolExecutor, as_completed
+
+# TODO Wrap these functions and most of main in an object - everything
+# is messy as fuck.
+
+def check_last_live(state_obj, decision_obj):
+
+    # A list of edges that were in use last time that are still
+    # healthy now.
+    still_healthy = []
+
+    if state_obj.last_live:
+        logging.debug("Live edge list from previous run is %s", state_obj.last_live)
+
+    # Make sure that any edges that were in rotation are still
+    # in a passing state. Discard any that are failing checks.
+    for oldlive_edge in state_obj.last_live:
+        if oldlive_edge in decision_obj.current_judgement and \
+           decision_obj.current_judgement[oldlive_edge] == "pass":
+            still_healthy.append(oldlive_edge)
+        else:
+            logging.debug("Discarding previously live edge %s because it is in state %s",
+                          oldlive_edge,
+                          decision_obj.current_judgement[oldlive_edge])
+
+    return still_healthy
 
 def nagios_output(lastrotation):
     time_now = time.time()
@@ -27,6 +53,9 @@ def nagios_output(lastrotation):
     return "EDGEMANAGE %s - %s" % (nagios_status, nagios_message)
 
 def acquire_lock(lockfile):
+    # Attempt to lock a file so that we don't have overlapping runs
+    # Might be deperecated in future in favour of the time checking
+    # used at the start of main()
     fp = open(lockfile, 'w')
 
     try:
@@ -92,7 +121,65 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
         logging.info("Fetch time for %s: %f avg: %f" % (edge, value, stat_store.current_average()))
 
         decision.add_stat_store(stat_store)
-    decision.check_threshold(config["goodenough"])
+    threshold_stats = decision.check_threshold(config["goodenough"])
+    logging.debug("Stats of threshold check are %s", str(threshold_stats))
+
+    # List of edges that will be made live
+    live_edge_list = []
+
+    # Do we have a previous edge list?
+    still_healthy_from_last_run = check_last_live(state_obj, decision)
+    if still_healthy_from_last_run:
+        logging.info("Got list of previously in use edges that are in a passing state: %s",
+                     still_healthy_from_last_run)
+
+    if len(still_healthy_from_last_run) == config["edge_count"]:
+        logging.info(
+            "Old edge list is still healthy - not making any changes: %s",
+            still_healthy_from_last_run
+        )
+        live_edge_list = still_healthy_from_last_run
+    else:
+        logging.debug(("Didn't have enough healthy edges from last run to meet "
+                      "edge count - trying to add more edges"))
+
+        current_pass_edges = [ i for i in decision.current_judgement if \
+                               decision.current_judgement[i] == "pass" ]
+        if len(current_pass_edges) < (config["edge_count"] - len(still_healthy_from_last_run)):
+            logging.warning(("Don't have enough passing edges to supply a full "
+                             "list! (%d in pass state, %d healthy from last run)"),
+                            config["edge_count"], len(still_healthy_from_last_run))
+
+        for pass_edge in current_pass_edges:
+            if len(live_edge_list) == config["edge_count"]:
+                # We have enough edges, stop adding edges
+                break
+            else:
+                live_edge_list.append(current_pass_edges[
+                    random.randrange(len(current_pass_edges))
+                ])
+
+    if len(live_edge_list) == config["edge_count"]:
+        logging.info("Successfully established %d edges: %s",
+                     len(live_edge_list), str(live_edge_list))
+
+
+        edgelist = EdgeList()
+        for edgename in live_edge_list:
+            edgelist.add_edge(edgename)
+        # TODO HACK TEST populate this from a file
+        print edgelist.generate_zone("deflect.ca", config["zonetemplate_dir"], config["dns"])
+
+        if sorted(live_edge_list) != sorted(state_obj.last_live):
+            state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
+        state_obj.last_live = sorted(live_edge_list)
+    else:
+        logging.error("Couldn't establish full edge list! Only have %d edges (%s), need %d",
+                      len(live_edge_list), str(live_edge_list), config["edge_count"])
+        state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
+        state_obj.last_live = sorted(live_edge_list)
+
+
 
     if do_nagios_output:
         print nagios_output(state_obj.last_rotation())
