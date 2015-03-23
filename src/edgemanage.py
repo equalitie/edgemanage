@@ -3,6 +3,7 @@
 from edgemanage import const, EdgeTest, StatStore, DecisionMaker, StateFile, EdgeList
 
 import json
+import glob
 import time
 import os
 import sys
@@ -163,12 +164,28 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
         logging.info("Successfully established %d edges: %s",
                      len(live_edge_list), str(live_edge_list))
 
-
         edgelist = EdgeList()
         for edgename in live_edge_list:
             edgelist.add_edge(edgename)
-        # TODO HACK TEST populate this from a file
-        print edgelist.generate_zone("deflect.ca", config["zonetemplate_dir"], config["dns"])
+
+        # Iterate over every *zone file in the zonetemplate dir and write out files.
+        for zonefile in glob.glob("%s/*.zone" % config["zonetemplate_dir"] ):
+            zone_name = zonefile.split(".zone")[0].split("/")[-1]
+            complete_zone_str = edgelist.generate_zone(
+                zone_name, config["zonetemplate_dir"], config["dns"]
+            )
+
+            complete_zone_path = os.path.join(config["named_dir"], "%s.zone" % zone_name)
+            #TODO add rotation of old files
+            if not dry_run:
+                with open(complete_zone_path, "w") as complete_zone_f:
+                    logging.debug("Writing completed zone file for %s to %s",
+                                  zone_name, complete_zone_path)
+                    complete_zone_f.write(complete_zone_str)
+            else:
+                logging.debug(("In dry run so not writing file %s for zone %s. "
+                               "It would have contained:\n%s"),
+                              complete_zone_path, zone_name, complete_zone_str)
 
         if sorted(live_edge_list) != sorted(state_obj.last_live):
             state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
@@ -178,7 +195,6 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
                       len(live_edge_list), str(live_edge_list), config["edge_count"])
         state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
         state_obj.last_live = sorted(live_edge_list)
-
 
 
     if do_nagios_output:

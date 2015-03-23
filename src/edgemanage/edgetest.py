@@ -1,6 +1,7 @@
 # stdlib
 import urlparse
 import hashlib
+import logging
 
 # local
 import const
