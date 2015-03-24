@@ -39,13 +39,13 @@ def check_last_live(state_obj, decision_obj):
                           oldlive_edge,
                           decision_obj.current_judgement[oldlive_edge])
 
-    return still_healthy
+    return list(set(still_healthy))
 
 def nagios_output(lastrotation):
     time_now = time.time()
     nagios_status = "OK"
     if lastrotation:
-        nagios_message = "Last rotation was %d ago" % (time_now - lastrotation)
+        nagios_message = "Last rotation was %ds ago" % (time_now - lastrotation)
     if not lastrotation:
         nagios_status = "UNKNOWN"
         nagios_message = "No last rotation time"
@@ -81,10 +81,8 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
         sys.exit(1)
 
     # Read the edgelist as a flat file
-    # TODO have the option to check the file for YAML and then default to
-    # flat list.
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
-        edge_list = [ i for i in edge_f.read().split("\n") if i.strip() ]
+        edge_list = [ i for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
     if verbose:
         logging.info("Edge list is %s", str(edge_list))
 
@@ -95,8 +93,8 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
     # Hash the local copy of the object to be requested from the edges
     with open(config["testobject"]["local"]) as test_local_f:
         testobject_hash = hashlib.md5(test_local_f.read()).hexdigest()
-        logging.info("Hash of local object %s is %s" % (config["testobject"]["local"],
-                                                        testobject_hash))
+        logging.info("Hash of local object %s is %s",
+                     config["testobject"]["local"], testobject_hash)
 
     edgescore_futures = []
 
@@ -119,8 +117,8 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
         edge, value = result.items()[0]
         stat_store = StatStore(edge, config["healthdata_store"], nowrite=dry_run)
         stat_store.add_value(value)
-        logging.info("Fetch time for %s: %f avg: %f" % (edge, value, stat_store.current_average()))
-
+        logging.info("Fetch time for %s: %f avg: %f",
+                     edge, value, stat_store.current_average())
         decision.add_stat_store(stat_store)
     threshold_stats = decision.check_threshold(config["goodenough"])
     logging.debug("Stats of threshold check are %s", str(threshold_stats))
@@ -146,19 +144,19 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
 
         current_pass_edges = [ i for i in decision.current_judgement if \
                                decision.current_judgement[i] == "pass" ]
+        logging.debug("Current list of passing edges is %s", str(current_pass_edges))
         if len(current_pass_edges) < (config["edge_count"] - len(still_healthy_from_last_run)):
             logging.warning(("Don't have enough passing edges to supply a full "
                              "list! (%d in pass state, %d healthy from last run)"),
                             config["edge_count"], len(still_healthy_from_last_run))
 
+        random.shuffle(current_pass_edges)
         for pass_edge in current_pass_edges:
             if len(live_edge_list) == config["edge_count"]:
                 # We have enough edges, stop adding edges
                 break
             else:
-                live_edge_list.append(current_pass_edges[
-                    random.randrange(len(current_pass_edges))
-                ])
+                live_edge_list.append(pass_edge)
 
     if len(live_edge_list) == config["edge_count"]:
         logging.info("Successfully established %d edges: %s",
@@ -169,7 +167,7 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
             edgelist.add_edge(edgename)
 
         # Iterate over every *zone file in the zonetemplate dir and write out files.
-        for zonefile in glob.glob("%s/*.zone" % config["zonetemplate_dir"] ):
+        for zonefile in glob.glob("%s/*.zone" % config["zonetemplate_dir"]):
             zone_name = zonefile.split(".zone")[0].split("/")[-1]
             complete_zone_str = edgelist.generate_zone(
                 zone_name, config["zonetemplate_dir"], config["dns"]
@@ -195,7 +193,6 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
                       len(live_edge_list), str(live_edge_list), config["edge_count"])
         state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
         state_obj.last_live = sorted(live_edge_list)
-
 
     if do_nagios_output:
         print nagios_output(state_obj.last_rotation())
