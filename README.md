@@ -1,5 +1,5 @@
 edgemanage2
--------
+========
 
 Edgemanage is a tool for manging the HTTP availability of a cluster of
 web servers via DNS. The machines tested are expected to be at risk of
@@ -8,7 +8,7 @@ machine is found to be underperforming, it is replace by a more
 performant host to ensure maximum availability.
 
 Overview
-=======
+--------
 
 Edgemanage is a simple script and Python library designed to be run at
 regular intervals, usually via crontab. The designed usecase was every
@@ -26,7 +26,7 @@ format being bind-compliant. The per-domain records that are included
 are plain ol' Bind style rules. Just don't include any SOA records.
 
 Operation
-=======
+--------
 
 Edgemanage maintains a store of historial fetches per host and can
 make decisions based on this data. By default, if there are not enough
@@ -46,7 +46,7 @@ be assigned to a host (thereby ensuring both its removal from the live
 pool and also a backoff window via its averages).
 
 Logging/Output
-=======
+--------
 
 For debugging, the use of the verbose mode is recommended. Using
 verbose mode disable logging to syslog.
@@ -56,7 +56,7 @@ decisions that would be made (use of the verbose switch is
 recommended).
 
 Configuration
-=======
+--------
 
 The "object" that edgemanage focuses could be absolutely anything - in
 testing the file that was used was a simple text file. The only
@@ -68,7 +68,7 @@ See the `edgemanage.yaml` file for documentation of the configuration
 options.
 
 History
-=======
+--------
 
 Edgemanage was developed as a replacement for a few aspects of the
 [Deflect](https://deflect.ca) project.
