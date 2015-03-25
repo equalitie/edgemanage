@@ -193,6 +193,7 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
                                "It would have contained:\n%s"),
                               complete_zone_path, zone_name, complete_zone_str)
 
+        # There has been a rotation as our old list doesn't equal the new
         if edgelist.get_live_edges() != state_obj.last_live:
             state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
         state_obj.last_live = edgelist.get_live_edges()
@@ -224,8 +225,8 @@ if __name__ == "__main__":
     with open(args.config_path) as config_f:
         config = yaml.safe_load(config_f.read())
 
-    logger = logging.getLogger()
     if args.verbose:
+        logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler() # log to STDERR
         handler.setFormatter(
