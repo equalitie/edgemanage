@@ -72,7 +72,7 @@ def future_fetch(edgetest, testobject_host, testobject_path, testobject_proto):
     fetch_result = edgetest.fetch(testobject_host, testobject_path, testobject_proto)
     return {edgetest.edgename: fetch_result}
 
-def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
+def main(dnet, dry_run, do_nagios_output, config, state_obj):
 
     time_now = time.time()
     if state_obj.last_run and not dry_run and int(state_obj.last_run) + 59 > int(time_now):
@@ -83,7 +83,6 @@ def main(dnet, dry_run, verbose, do_nagios_output, config, state_obj):
     # Read the edgelist as a flat file
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [ i for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
-    if verbose:
         logging.info("Edge list is %s", str(edge_list))
 
     testobject_proto = config["testobject"]["proto"]
@@ -248,7 +247,7 @@ if __name__ == "__main__":
     if not acquire_lock(config["lockfile"]):
         raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")
     else:
-        main(args.dnet, args.dryrun, args.verbose, args.nagios, config, state)
+        main(args.dnet, args.dryrun, args.nagios, config, state)
     state.set_last_run()
     if not args.dryrun:
         with open(config["statefile"], "w") as statefile_f:
