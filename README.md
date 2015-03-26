@@ -18,7 +18,8 @@ Edgemanage fetches an object from a lists of hosts over HTTP and uses
 the time taken to retrieve the object to make decisions about which
 hosts are healthiest. These hosts are then written to a zone file as A
 records for the apex of a domain, in addition to additional records in
-other files elsewhere.
+other files elsewhere. Simple checksumming of the local and remote
+objects also happens after fetching.
 
 The zone files that Edgemanage writes are created via Jinja templates,
 with SOA and NS data defined in the configuration file and the output
@@ -27,6 +28,16 @@ are plain ol' Bind style rules. Just don't include any SOA records.
 
 Operation
 --------
+
+A host is considered to be in a healthy state (internally called
+"pass") when the object is returned under the `goodenough` value set
+in the configuration file. Hosts that return the fetched object under
+the time specified will always be chosen first in case the need to
+replace a host that is not in a healthy state.
+
+Care is taken to ensure that DNS changes are not made where they are
+not needed - this means that if the last set of known healthy edges
+are in a passing state, there will be no change in DNS.
 
 Edgemanage maintains a store of historial fetches per host and can
 make decisions based on this data. By default, if there are not enough
@@ -62,7 +73,19 @@ The "object" that edgemanage focuses could be absolutely anything - in
 testing the file that was used was a simple text file. The only
 concern is that an object that takes a long time runs the risk of
 coming close to theoretical fetch times in slow situation, thereby
-potentially interrupting sequential runs.
+potentially interrupting sequential runs. It's also worth noting that
+Edgemanage currently uses a simple requests
+[get](http://docs.python-requests.org/en/latest/api/#requests.get), so
+downloading enormous objects will lead to memory issues. So eh, don't
+do that.
+
+Edgemanage supports multiple "networks" - different groups of hosts to
+be queried and used for writing zone files.
+
+Edgemanage uses the `dnschange_maxfreq` configuration option to limit
+the number of rotations that can be undertaken in a certain time
+period. This is to limit churn that could lead to constantly empty
+caches and so on.
 
 See the `edgemanage.yaml` file for documentation of the configuration
 options.

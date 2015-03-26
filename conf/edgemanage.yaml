@@ -1,28 +1,67 @@
 ---
 testobject:
-  host: deflect.ca
+  # The domain to query for the object - used to set the Host header
+  # in the GETs
+  host: site.com
+  # Query over HTTP or HTTPS?
   proto: https
-  uri: /edgemanage.object
-  local: ../edgemanage.object
+  # Path to the object to be retrieved
+  uri: /myobject.edgemanage
+  # Local copy of the object that we'll be fetching.
+  local: /etc/edgemanage/myobject.edgemanage
 
 dns:
+  # A list of nameservers to write NS records for in generated zone
+  # files
   ns_records:
-    - adns1.easydns.com.
-    - adns2.easydns.com.
-  soa_nameserver: dns0.easydns.com.
-  soa_mailbox: zone.easydns.com.
+    - dns2.example.com.
+    - dns1.example.com
+  # The nameserver to write to SOA records
+  soa_nameserver: dns0.example.com.
+  # The mailbox to write to SOA records
+  soa_mailbox: zone.example.com.
 
-#healthdata_store: /var/lib/edgemanage/healthdata/
-healthdata_store: /tmp/health
-# To be suffixed with {{dnet}} and {{dnet}}.live
-edgelist_dir: /tmp/edges/
+# Where health data for individual edges is stored
+healthdata_store: /var/lib/edgemanage/health/
+
+# Directory containing lists of edges (hosts to be queried), divided
+# by network (the name passed to the -A flag). If you have two
+# networks, net_a and net_b, there would be two files named for each
+# network. These networks will be queried depending on which flag is
+# passed to the edgemanage command.
+edgelist_dir: /etc/edgemanage/edges/
+
+# This setting defines the maximum number of substitutions that can be
+# performed in a 10 minute period
 dnschange_maxfreq: 10
+
 # Number of retries when fetching the object from an edge
 retry: 3
-goodenough: 500
+
+# A value, in seconds, that is used to determine edge health - one of
+# the core elements of edgemanage. If the fetch time, the fetch time
+# slice average, or the overall average is under this value, there is
+# a chance that an edge will be used. See the README for more
+# explanation of how this value is used.
+goodenough: 0.700
+
+# A file used to maintain state, details about last rotation and the
+# previously in-use edges
+statefile: /var/lib/edgemanage/state
+
+# The file that edgemanage should log to
 logpath: /var/log/edgemanage.log
-lockfile: /tmp/edgemanage.lock
-rotationhistory_store: /var/edgemanage/rotation_history
-soa_template: /usr/local/edgemanage/soa_template
-zonetemplate_dir: /usr/local/deflect/etc/zones
-# More stuff
+# A simple lockfile to prevent concurrent execution
+lockfile: /var/lock/edgemanage.lock
+
+# A directory containing files named deflect.ca.zone, nosmo.me.zone
+# and so on. Used for insertion into completed zone files after edges
+# have been decided upon. Stick your MX, CNAME and non-@ A records
+# into these files
+zonetemplate_dir: /etc/edgemanage/zones
+# Number of edges to keep as the @ record in DNS
+edge_count: 4
+# Directory to write completed, full DNS zone files to. If you're
+# using Edgemanage in a live capacity, this should be the directory
+# that your bind instance reads zone files from
+named_dir: /var/cache/named/
