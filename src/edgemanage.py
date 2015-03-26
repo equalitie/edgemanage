@@ -123,7 +123,7 @@ def main(dnet, dry_run, do_nagios_output, config, state_obj):
     logging.debug("Stats of threshold check are %s", str(threshold_stats))
 
     # List of edges that will be made live
-    live_edge_list = []
+
     edgelist = EdgeList()
 
     # Do we have a previous edge list?
@@ -134,25 +134,24 @@ def main(dnet, dry_run, do_nagios_output, config, state_obj):
 
     for still_healthy in still_healthy_from_last_run:
         edgelist.add_edge(still_healthy, state="pass", live=True)
-    logging.debug("List of surviving passing edges is %s", edgelist.get_edges("pass"))
 
     if len(still_healthy_from_last_run) == config["edge_count"]:
         logging.info(
-            "Old edge list is still healthy - not making any changes: %s",
-            still_healthy_from_last_run
+            "Old edge list is still healthy - not making any changes"
         )
     else:
         logging.debug(("Didn't have enough healthy edges from last run to meet "
                       "edge count - trying to add more edges"))
 
         for decision_edge, edge_state in decision.current_judgement.iteritems():
-            edgelist.add_edge(decision_edge, state=edge_state)
-        logging.debug("List of new and old passing edges is %s", edgelist.get_edges("pass"))
+            if decision_edge not in edgelist.edges:
+                edgelist.add_edge(decision_edge, state=edge_state)
+        logging.debug("List of previously passing edges is currently %s", edgelist.get_live_edges())
 
-        if len(edgelist.get_edges("pass")) < config["edge_count"]:
-            logging.warning(("Don't have enough passing edges to supply a full "
-                             "list! (%d in pass state, %d healthy from last run)"),
-                            config["edge_count"], len(edgelist.get_edges("pass")))
+        #if len(edgelist.get_edges("pass")) < config["edge_count"]:
+        #    logging.warning(("Don't have enough passing edges to supply a full "
+        #                     "list! (%d in pass state, %d healthy from last run)"),
+        #                    config["edge_count"], len(edgelist.get_edges("pass")))
 
 
         # Attempt to meet demand, first with passing, then with
