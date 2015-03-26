@@ -54,13 +54,15 @@ logpath: /var/log/edgemanage.log
 # A simple lockfile to prevent concurrent execution
 lockfile: /var/lock/edgemanage.lock
 
-# A directory containing files named deflect.ca.zone, nosmo.me.zone
-# and so on. Used for insertion into completed zone files after edges
-# have been decided upon. Stick your MX, CNAME and non-@ A records
-# into these files
+# A directory containing directories containing files named
+# deflect.ca.zone, nosmo.me.zone and so on. Used for insertion into
+# completed zone files after edges have been decided upon. Stick your
+# MX, CNAME and non-@ A records into these files.
 zonetemplate_dir: /etc/edgemanage/zones
+
 # Number of edges to keep as the @ record in DNS
 edge_count: 4
+
 # Directory to write completed, full DNS zone files to. If you're
 # using Edgemanage in a live capacity, this should be the directory
 # that your bind instance reads zone files from

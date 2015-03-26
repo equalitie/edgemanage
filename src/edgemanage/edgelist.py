@@ -36,6 +36,7 @@ class EdgeList(object):
     def get_live_edges(self):
         edge_list = []
         for edge, state_dict in self.edges.iteritems():
+
             if state_dict["live"]:
                 edge_list.append(edge)
         return sorted(edge_list)

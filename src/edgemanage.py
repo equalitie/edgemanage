@@ -173,10 +173,11 @@ def main(dnet, dry_run, do_nagios_output, config, state_obj):
                      edgelist.get_live_count(), edgelist.get_live_edges())
 
         # Iterate over every *zone file in the zonetemplate dir and write out files.
-        for zonefile in glob.glob("%s/*.zone" % config["zonetemplate_dir"]):
+        for zonefile in glob.glob("%s/%s/*.zone" % (config["zonetemplate_dir"], dnet)):
             zone_name = zonefile.split(".zone")[0].split("/")[-1]
             complete_zone_str = edgelist.generate_zone(
-                zone_name, config["zonetemplate_dir"], config["dns"]
+                zone_name, os.path.join(config["zonetemplate_dir"], dnet),
+                config["dns"]
             )
 
             complete_zone_path = os.path.join(config["named_dir"], "%s.zone" % zone_name)
