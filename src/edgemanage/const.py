@@ -1,5 +1,5 @@
 # Default configuration path
-CONFIG_PATH="/etc/edgemanage.yaml"
+CONFIG_PATH="/etc/edgemanage/edgemanage.yaml"
 # Timeout to fetch objects over HTTP
 FETCH_TIMEOUT=10
 # Times to retry fetching an object if failed

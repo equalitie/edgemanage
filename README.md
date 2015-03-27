@@ -26,6 +26,10 @@ with SOA and NS data defined in the configuration file and the output
 format being bind-compliant. The per-domain records that are included
 are plain ol' Bind style rules. Just don't include any SOA records.
 
+Installation
+--------
+See [INSTALL.md](https://github.com/equalitie/edgemanage/blob/master/INSTALL.md).
+
 Operation
 --------
 
