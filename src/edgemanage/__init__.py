@@ -1,4 +1,4 @@
-from const import *
+import const
 from edgetest import *
 from edgelist import EdgeList
 from statstore import StatStore
