@@ -53,6 +53,8 @@ class EdgeList(object):
         random.shuffle(edge_list)
         for edge in edge_list:
             if self.get_live_count() == desired_count:
+                logging.debug("Edgelist got enough (%d) edges in state %s",
+                              desired_count, state)
                 met_demand = True
                 break
             self.set_edge_live(edge)
@@ -77,8 +79,10 @@ class EdgeList(object):
             raise Exception(("Nameserver list is incorrectly formatted. Every"
                              " entry should end with a full stop"))
 
-        live_edge_ips = [ socket.gethostbyname("%s" % i) for i in self.edges \
-            if self.edges[i]["state"] == "live" ]
+        live_edge_ips = [ socket.gethostbyname("%s" % i) for i in self.get_live_edges() ]
+
+        logging.debug("Writing zone file for %s, live edge list is %s",
+                      domain, self.get_live_edges())
 
         with open(os.path.join(zonefile_dir, "%s.zone" % domain)) as zonefile_f:
             zonefile = zonefile_f.read()
