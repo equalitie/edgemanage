@@ -82,7 +82,7 @@ def main(dnet, dry_run, do_nagios_output, config, state_obj):
 
     # Read the edgelist as a flat file
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
-        edge_list = [ i for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
+        edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
         logging.info("Edge list is %s", str(edge_list))
 
     testobject_proto = config["testobject"]["proto"]
