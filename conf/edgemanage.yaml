@@ -15,7 +15,7 @@ dns:
   # files
   ns_records:
     - dns2.example.com.
-    - dns1.example.com
+    - dns1.example.com.
   # The nameserver to write to SOA records
   soa_nameserver: dns0.example.com.
   # The mailbox to write to SOA records
