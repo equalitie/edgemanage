@@ -18,5 +18,5 @@ setup(
         "Topic :: Internet :: Name Service (DNS)",
         "Topic :: Utilities",
         ],
-    scripts = ["edgemanage.py"],
+    scripts = ["edge_manage"],
     )
