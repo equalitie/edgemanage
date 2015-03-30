@@ -1,7 +1,7 @@
 edgemanage2
 ========
 
-Edgemanage is a tool for manging the HTTP availability of a cluster of
+Edgemanage is a tool for managing the HTTP availability of a cluster of
 web servers via DNS. The machines tested are expected to be at risk of
 large volumes of traffic, attack or other potential instability. If a
 machine is found to be underperforming, it is replace by a more
@@ -43,7 +43,7 @@ Care is taken to ensure that DNS changes are not made where they are
 not needed - this means that if the last set of known healthy edges
 are in a passing state, there will be no change in DNS.
 
-Edgemanage maintains a store of historial fetches per host and can
+Edgemanage maintains a store of historical fetches per host and can
 make decisions based on this data. By default, if there are not enough
 passing hosts, Edgemanage will add hosts based on their average over a
 time window, and failing that, their overall average.
