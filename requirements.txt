@@ -1,4 +1,4 @@
 requests
 jinja2
 futures
-yaml
+PyYAML
