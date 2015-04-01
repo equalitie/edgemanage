@@ -47,7 +47,7 @@ class EdgeTest(object):
         self.edgename = edgename
         self.local_sum = local_sum
 
-    def fetch(self, fetch_host, fetch_object, proto="https"):
+    def fetch(self, fetch_host, fetch_object, proto="https", verify=False):
         """
          fetch_host: The Host header to use when fetching
          fetch_object: The path to the object to be fetched
@@ -55,7 +55,7 @@ class EdgeTest(object):
         try:
             response = requests.get(urlparse.urljoin(proto + "://" + self.edgename,
                                                      fetch_object),
-                                    verify=False,
+                                    verify=verify,
                                     timeout=const.FETCH_TIMEOUT,
                                     headers = {"Host": fetch_host,
                                                "User-Agent": USER_AGENT})

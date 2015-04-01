@@ -9,6 +9,9 @@ testobject:
   uri: /myobject.edgemanage
   # Local copy of the object that we'll be fetching.
   local: /etc/edgemanage/myobject.edgemanage
+  # Verify SSL certificates? Will cause spammy logging on some
+  # platforms.
+  verify: True
 
 dns:
   # A list of nameservers to write NS records for in generated zone
