@@ -2,19 +2,20 @@
 
 from edgemanage import const, EdgeTest, StatStore, DecisionMaker, StateFile, EdgeList
 
-import json
-import glob
-import time
-import os
-import sys
-import random
-import yaml
-import argparse
-import logging
-import hashlib
-import fcntl
-import pprint
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import argparse
+import fcntl
+import glob
+import hashlib
+import json
+import logging
+import os
+import pprint
+import random
+import subprocess
+import sys
+import time
+import yaml
 
 # TODO Wrap these functions and most of main in an object - everything
 # is messy as fuck.
@@ -66,6 +67,26 @@ def acquire_lock(lockfile):
 
     return True
 
+def run_command_list(commands):
+    for command in commands:
+        # Subprocess wants a list. This will complicate things for
+        # people using complex strings but for now that's too bad.
+        command = command.split(" ")
+        try:
+            popened_p = subprocess.Popen(command)
+        except OSError as e:
+            logging.error("Failed to run command %s: %s", command, str(e))
+        except Exception as e:
+            # ~* I want to be the very best, like no one ever was *~
+            # I'll allow this kind of exception handling here
+            # because an unforeseen condition here shouldn't break
+            # execution.
+            logging.error(
+                "Caught unhandled exception when running command %s: %s",
+                command, str(e)
+            )
+    return None
+
 def future_fetch(edgetest, testobject_host, testobject_path,
                  testobject_proto, testobject_verify):
     """Helper function to give us a return value that plays nice with as_completed"""
@@ -97,6 +118,11 @@ def main(dnet, dry_run, do_nagios_output, config, state_obj):
         testobject_hash = hashlib.md5(test_local_f.read()).hexdigest()
         logging.info("Hash of local object %s is %s",
                      config["testobject"]["local"], testobject_hash)
+
+    # Run any run_before commands
+    if "commands" in config and "run_before" in config["commands"]:
+        if config["commands"]["run_before"]:
+            run_command_list(config["commands"]["run_before"])
 
     edgescore_futures = []
 
@@ -205,6 +231,10 @@ def main(dnet, dry_run, do_nagios_output, config, state_obj):
                       edgelist.get_live_count(), edgelist.get_live_edges(), config["edge_count"])
         state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
         state_obj.last_live = edgelist.get_live_edges()
+
+    if "commands" in config and "run_after" in config["commands"]:
+        if config["commands"]["run_after"]:
+            run_command_list(config["commands"]["run_after"])
 
     if do_nagios_output:
         print nagios_output(state_obj.last_rotation())
