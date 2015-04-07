@@ -70,3 +70,12 @@ edge_count: 4
 # using Edgemanage in a live capacity, this should be the directory
 # that your bind instance reads zone files from
 named_dir: /var/cache/named/
+
+# Run commands before or after rotation. A good example of a run_after
+# is reloading your named, but in theory this could be anything!
+# Edgemanage doesn't wait for the process to return, so whatever this
+# screws up is all on you.
+commands:
+  run_after:
+    - /usr/sbin/rndc reload
+  run_before:
