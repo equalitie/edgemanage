@@ -31,7 +31,10 @@ class DecisionMaker(object):
 
         for edgename, stat_store in self.stat_stores.iteritems():
             time_slice = stat_store[time.time() - DECISION_SLICE_WINDOW:time.time()]
-            time_slice_avg = sum(time_slice)/len(time_slice)
+            if time_slice:
+                time_slice_avg = sum(time_slice)/len(time_slice)
+            else:
+                time_slice_avg = None
             logging.debug("Analysing %s. Last val: %f, time slice: %f, average: %f",
                           edgename, stat_store.last_value(), time_slice_avg,
                           stat_store.current_average())
@@ -41,7 +44,7 @@ class DecisionMaker(object):
                              stat_store.last_value(), good_enough)
                 self.current_judgement[edgename] = "pass"
                 results_dict["pass"] += 1
-            elif time_slice_avg < good_enough:
+            elif time_slice and time_slice_avg < good_enough:
                 self.current_judgement[edgename] = "pass_window"
                 results_dict["pass_window"] += 1
                 logging.info("UNSURE: Last fetch for %s is NOT under the threshold but the average of the last %d items is (%f < %f)", edgename, len(time_slice), time_slice_avg, good_enough)
