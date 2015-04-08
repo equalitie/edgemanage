@@ -69,7 +69,7 @@ edge_count: 4
 # Directory to write completed, full DNS zone files to. If you're
 # using Edgemanage in a live capacity, this should be the directory
 # that your bind instance reads zone files from
-named_dir: /var/cache/named/
+named_dir: /var/cache/bind/
 
 # Run commands before or after rotation. A good example of a run_after
 # is reloading your named, but in theory this could be anything!

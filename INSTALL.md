@@ -28,7 +28,7 @@ arbitrary suggestions, put stuff where you like!
 * Create the directories we'll need:
     * `/etc/edgemanage/{zones,edges}`
     * `/var/lib/edgemanage/health`
-    * Wherever your zone files get written to (`/var/cache/named` by default)
+    * Wherever your zone files get written to (`/var/cache/bind` by default)
 * Copy `conf/edgemanage.yaml` to `/etc/edgemanage/`
 * Set up your edge list in `/etc/edgemanage/edges/mynet`. Edge lists
   are just flat files with a newline-separated list of hosts to be
