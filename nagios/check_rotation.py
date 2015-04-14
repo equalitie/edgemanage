@@ -22,7 +22,7 @@ class CheckRotation(object):
             nagios_message = "No last rotation time"
         else:
             perf_data = time_now - self.state_info["rotation_list"][-1]
-            nagios_message = "Last rotation was %ds ago" % (time_now - self.state_info["rotation_list"][-1])
+            nagios_message = "Last rotation was %d seconds ago" % (time_now - self.state_info["rotation_list"][-1])
         if (time_now - self.state_info["rotation_list"][-1]) < WARNING_THRESHOLD:
             nagios_status = 1
 
