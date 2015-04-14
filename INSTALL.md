@@ -16,7 +16,7 @@ Installation
 --------
 
 `python setup.py install`. Unless you have a bindir and libdir that
-isn't owned by your user, you'll need to do this as root.
+is owned by your user, you'll need to do this as root.
 
 Configuration
 --------
