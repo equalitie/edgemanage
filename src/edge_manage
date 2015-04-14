@@ -42,17 +42,6 @@ def check_last_live(state_obj, decision_obj):
 
     return list(set(still_healthy))
 
-def nagios_output(lastrotation):
-    time_now = time.time()
-    nagios_status = "OK"
-    if lastrotation:
-        nagios_message = "Last rotation was %ds ago" % (time_now - lastrotation)
-    if not lastrotation:
-        nagios_status = "UNKNOWN"
-        nagios_message = "No last rotation time"
-    elif (time_now - lastrotation) < const.NAGIOS_WARNING_TIME:
-        nagios_status = "WARNING"
-    return "EDGEMANAGE %s - %s" % (nagios_status, nagios_message)
 
 def acquire_lock(lockfile):
     # Attempt to lock a file so that we don't have overlapping runs
@@ -95,7 +84,7 @@ def future_fetch(edgetest, testobject_host, testobject_path,
                                   testobject_proto, testobject_verify)
     return {edgetest.edgename: fetch_result}
 
-def main(dnet, dry_run, do_nagios_output, config, state_obj):
+def main(dnet, dry_run, config, state_obj):
 
     time_now = time.time()
     if state_obj.last_run and not dry_run and int(state_obj.last_run) + 59 > int(time_now):
@@ -236,9 +225,6 @@ def main(dnet, dry_run, do_nagios_output, config, state_obj):
         if config["commands"]["run_after"]:
             run_command_list(config["commands"]["run_after"])
 
-    if do_nagios_output:
-        print nagios_output(state_obj.last_rotation())
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Manage Deflect edge status.')
@@ -247,8 +233,6 @@ if __name__ == "__main__":
     parser.add_argument("--config", "-c", dest="config_path", action="store",
                         help="Path to configuration file (defaults to %s)" % const.CONFIG_PATH,
                         default=const.CONFIG_PATH)
-    parser.add_argument("--nagios", "-N", dest="nagios", action="store_true",
-                        help="Nagios-friendly output", default=False)
     parser.add_argument("--dry-run", "-n", dest="dryrun", action="store_true",
                         help="Dry run - don't generate any files", default=False)
     parser.add_argument("--verbose", "-v", dest="verbose", action="store_true",
@@ -281,7 +265,7 @@ if __name__ == "__main__":
     if not acquire_lock(config["lockfile"]):
         raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")
     else:
-        main(args.dnet, args.dryrun, args.nagios, config, state)
+        main(args.dnet, args.dryrun, config, state)
     state.set_last_run()
     if not args.dryrun:
         with open(config["statefile"], "w") as statefile_f:

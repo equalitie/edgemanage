@@ -26,7 +26,7 @@ class CheckRotation(object):
         if (time_now - self.state_info["rotation_list"][-1]) < WARNING_THRESHOLD:
             nagios_status = 1
 
-        return (nagios_status, "%s | %d" % (nagios_message, perf_data))
+        return (nagios_status, "%s | time=%d" % (nagios_message, perf_data))
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
