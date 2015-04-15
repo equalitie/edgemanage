@@ -20,7 +20,7 @@ DECISION_SLICE_WINDOW=300
 NAGIOS_WARNING_TIME = 300
 
 # Number of historical rotations to keep in the state file.
-STATE_HISTORICAL_ROTATIONS = 10
+STATE_HISTORICAL_ROTATIONS = 100
 
 # Upper domain to use for looking up IP addresses of edges while
 # populating zone files
