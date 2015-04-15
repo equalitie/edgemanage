@@ -79,7 +79,20 @@ class EdgeList(object):
             raise Exception(("Nameserver list is incorrectly formatted. Every"
                              " entry should end with a full stop"))
 
-        live_edge_ips = [ socket.gethostbyname("%s" % i) for i in self.get_live_edges() ]
+        live_edge_ips = []
+        for live_edge in self.get_live_edges():
+            try:
+                edge_ip = socket.gethostbyname(i)
+            except socket.gaierror as e:
+                try:
+                    # Retry resolution failures
+                    edge_ip = socket.gethostbyname(i)
+                except socket.gaierror as e:
+                    logging.error(("Failed to resolve IP address for %s! Correct"
+                                   " hostname or remove this IP address from rotation."),
+                                  live_edge)
+                    continue
+            live_edge_ips.append(live_edge)
 
         logging.debug("Writing zone file for %s, live edge list is %s",
                       domain, self.get_live_edges())
