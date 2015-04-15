@@ -94,6 +94,14 @@ caches and so on.
 See the `edgemanage.yaml` file for documentation of the configuration
 options.
 
+Monitoring
+--------
+
+Straight forward Nagios-compliant checks are available in the
+[nagios](tree/master/nagios) directory. The checks are designed to use
+nothing but the Python standard library the files that the
+`edge_manage` script writes to the state and heath directories.
+
 History
 --------
 
