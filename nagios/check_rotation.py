@@ -1,11 +1,10 @@
 import sys
 import time
 import json
+import argparse
 
-# This needs to be made an argument but for now it's here. If not
-# fixed this script isn't much use.
-
-WARNING_THRESHOLD=300
+# Period in minutes
+ROTATION_PERIOD=10
 
 class CheckRotation(object):
 
@@ -13,26 +12,42 @@ class CheckRotation(object):
         with open(state_file) as state_f:
             self.state_info = json.loads(state_f.read())
 
-    def check_rotation(self):
+    def check_rotation(self, warn, crit):
         time_now = time.time()
         nagios_status = 0
         perf_data = 0
-        if not self.state_info["rotation_list"]:
+        if not self.state_info["rotation_list"] or \
+           len(self.state_info["rotation_list"]) < ROTATION_PERIOD:
             nagios_status = 3
-            nagios_message = "No last rotation time"
+            nagios_message = "Not enough rotation data"
         else:
-            perf_data = time_now - self.state_info["rotation_list"][-1]
-            nagios_message = "Last rotation was %d seconds ago" % (time_now - self.state_info["rotation_list"][-1])
-        if (time_now - self.state_info["rotation_list"][-1]) < WARNING_THRESHOLD:
+            window_start = time_now - (ROTATION_PERIOD * 60)
+            rotations = [ i for i in self.state_info["rotation_list"] \
+                          if i > window_start and i < time_now ]
+            perf_data = len(rotations)
+            nagios_message = "%d rotations in the last %d minutes" % (perf_data, ROTATION_PERIOD)
+
+        if len(rotations) >= warn:
             nagios_status = 1
+        elif len(rotations) >= crit:
+            nagios_status = 2
 
         return (nagios_status, "%s | time=%d" % (nagios_message, perf_data))
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.stderr.write("Need one argument - a path to the Edgemanage state file")
 
-    c = CheckRotation(sys.argv[1])
-    status, message = c.check_rotation()
+    parser = argparse.ArgumentParser(description='Nagios check for Edgemanage rotation frequency.')
+    parser.add_argument("statefile", nargs=1, action="store",
+                        help="Path to the edgemanage state file")
+    parser.add_argument("--warn", "-w", action="store", dest="warn",
+                        help="Path to the edgemanage state file",
+                        default=4, type=int)
+    parser.add_argument("--critical", "-c", action="store", dest="crit",
+                        help="Path to the edgemanage state file",
+                        default=8, type=int)
+    args = parser.parse_args()
+
+    c = CheckRotation(args.statefile[0])
+    status, message = c.check_rotation(args.warn, args.crit)
     print message
     sys.exit(status)
