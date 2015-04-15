@@ -6,6 +6,12 @@ import argparse
 # Period in minutes
 ROTATION_PERIOD=10
 
+OUTPUT_LABEL = "EDGE_ROTATE"
+STATUS_MAP = {0: "OK",
+              1: "WARN",
+              2: "CRIT",
+              3: "UKNOWN"}
+
 class CheckRotation(object):
 
     def __init__(self, state_file):
@@ -25,14 +31,16 @@ class CheckRotation(object):
             rotations = [ i for i in self.state_info["rotation_list"] \
                           if i > window_start and i < time_now ]
             perf_data = len(rotations)
-            nagios_message = "%d rotations in the last %d minutes" % (perf_data, ROTATION_PERIOD)
+            nagios_message = "%d in %d seconds" % (perf_data, ROTATION_PERIOD * 60)
 
-        if len(rotations) >= warn:
-            nagios_status = 1
-        elif len(rotations) >= crit:
+        if len(rotations) >= crit:
             nagios_status = 2
+        elif len(rotations) >= warn:
+            nagios_status = 1
 
-        return (nagios_status, "%s | time=%d" % (nagios_message, perf_data))
+        return (nagios_status, "%s %s %s | frequency=%d" % (OUTPUT_LABEL,
+                                                            STATUS_MAP[nagios_status],
+                                                            nagios_message, perf_data))
 
 if __name__ == "__main__":
 
