@@ -59,9 +59,10 @@ class CheckLatency(object):
             nagios_status = 1
             nagios_message = "Slowest active edge %s responded in %f" % (edge_name, worst_latency)
 
-        return (nagios_status, "%s %s %s | slowestactive=%f" % (OUTPUT_LABEL,
-                                                                STATUS_MAP[nagios_status],
-                                                                nagios_message, worst_latency))
+        return (nagios_status, "%s %s %s | time=%f edge=%s" % (OUTPUT_LABEL,
+                                                               STATUS_MAP[nagios_status],
+                                                               nagios_message, worst_latency,
+                                                               edge_name))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Nagios check for Edgemanage fetch latency.')
