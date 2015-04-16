@@ -11,30 +11,29 @@ import requests
 
 USER_AGENT="Edgemanage v2 (https://github.com/equalitie/edgemanage)"
 
+class FetchFailed(Exception):
+    def __init__(self, edgetest, fetch_host, fetch_object, reason):
+        message = "Failed to fetch %s/%s from %s: %s" % (fetch_host, fetch_object,
+                                                         edgetest.edgename, reason)
+        super(FetchFailed, self).__init__(message)
 
-class EdgeException(Exception):
-    def __init__(self, message, edgetest,
-                 fetch_host, fetch_object):
-        super(EdgeException, self).__init__(message)
         self.edgename = edgetest.edgename
         self.local_sum = edgetest.local_sum
         self.fetch_host = fetch_host
         self.fetch_object = fetch_object
 
-class FetchFailed(EdgeException):
-    def __init__(self, edgetest, fetch_host, fetch_object, reason):
-        message = "Failed to fetch %s/%s from %s: %s" % (fetch_host, fetch_object,
-                                                         edgetest.edgename, reason)
-        super(FetchFailed, self).__init__(message, edgetest,
-                                          fetch_host, fetch_object)
-
-class VerifyFailed(EdgeException):
+class VerifyFailed(Exception):
     def __init__(self, edgetest, fetch_host, fetch_object, reason):
         message = "Failed to verify %s/%s from %s: %s != %s" % (
             fetch_host, fetch_object, edgetest.edgename,
             edgetest.local_sum, reason)
-        super(VerifyFailed, self).__init__(message, edgetest,
-                                          fetch_host, fetch_object)
+        super(VerifyFailed, self).__init__(message)
+
+        self.edgename = edgetest.edgename
+        self.local_sum = edgetest.local_sum
+        self.fetch_host = fetch_host
+        self.fetch_object = fetch_object
+
 
 class EdgeTest(object):
 
