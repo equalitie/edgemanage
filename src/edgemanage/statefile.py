@@ -13,6 +13,8 @@ class StateFile(object):
         self.last_run = None
         # a list of the last live edges
         self.last_live = []
+        # A list of failures last run
+        self.verification_failues = []
 
         # Restore any existing saved values - setting values above
         # this means that we can add new values to the state file

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from edgemanage import const, EdgeTest, StatStore, DecisionMaker, StateFile, EdgeList
+from edgemanage import const, EdgeTest, StatStore, DecisionMaker, StateFile, EdgeList, VerifyFailed
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import argparse
@@ -80,8 +80,11 @@ def future_fetch(edgetest, testobject_host, testobject_path,
                  testobject_proto, testobject_verify):
     """Helper function to give us a return value that plays nice with as_completed"""
 
-    fetch_result = edgetest.fetch(testobject_host, testobject_path,
-                                  testobject_proto, testobject_verify)
+    try:
+        fetch_result = edgetest.fetch(testobject_host, testobject_path,
+                                      testobject_proto, testobject_verify)
+    except VerifyFailed:
+        fetch_result = False
     return {edgetest.edgename: fetch_result}
 
 def main(dnet, dry_run, config, state_obj):
@@ -125,6 +128,7 @@ def main(dnet, dry_run, config, state_obj):
                                                      testobject_verify))
 
     decision = DecisionMaker()
+    verification_failues = []
 
     for f in as_completed(edgescore_futures):
         try:
@@ -133,12 +137,17 @@ def main(dnet, dry_run, config, state_obj):
             # Do some shit here
             raise
         edge, value = result.items()[0]
+
+        if value == False:
+            verification_failues.append(edge)
+
         stat_store = StatStore(edge, config["healthdata_store"], nowrite=dry_run)
         stat_store.add_value(value)
         logging.info("Fetch time for %s: %f avg: %f",
                      edge, value, stat_store.current_average())
         decision.add_stat_store(stat_store)
     threshold_stats = decision.check_threshold(config["goodenough"])
+    state_obj.verification_failures = verification_failues
     logging.debug("Stats of threshold check are %s", str(threshold_stats))
 
     # List of edges that will be made live
