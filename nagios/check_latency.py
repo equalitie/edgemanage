@@ -69,10 +69,10 @@ if __name__ == "__main__":
     parser.add_argument("edgehealth", nargs=1, action="store",
                         help="Path to the edgemanage edge health store")
     parser.add_argument("--warn", "-w", action="store", dest="warn",
-                        help="Path to the edgemanage state file",
+                        help="Latency to trigger WARN level at",
                         default=DEFAULT_WARN, type=int)
     parser.add_argument("--critical", "-c", action="store", dest="crit",
-                        help="Path to the edgemanage state file",
+                        help="Latency to trigger CRIT level at",
                         default=DEFAULT_CRIT, type=int)
     args = parser.parse_args()
     c = CheckLatency(args.edgehealth[0])

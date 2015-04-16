@@ -48,10 +48,10 @@ if __name__ == "__main__":
     parser.add_argument("statefile", nargs=1, action="store",
                         help="Path to the edgemanage state file")
     parser.add_argument("--warn", "-w", action="store", dest="warn",
-                        help="Path to the edgemanage state file",
+                        help="Latency to trigger WARN level at",
                         default=4, type=int)
     parser.add_argument("--critical", "-c", action="store", dest="crit",
-                        help="Path to the edgemanage state file",
+                        help="Latency to trigger CRIT level at",
                         default=8, type=int)
     args = parser.parse_args()
 
