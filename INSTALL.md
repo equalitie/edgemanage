@@ -10,13 +10,15 @@ you will also need to `apt-get install python-concurrent.futures`,
 this depends on the version of Python you're running and also how your
 maintainer has built it - Debian wheezy requires this package.
 
-If using `pip`, simply run `pip install -r requirements.txt`.
+Alternatively, if using `pip`, simply run `pip install -r
+requirements.txt`.
 
 Installation
 --------
 
-`python setup.py install`. Unless you have a bindir and libdir that
-is owned by your user, you'll need to do this as root.
+Change directory to `src` and run `python setup.py install`. Unless
+you have a bindir and libdir that is owned by your user, you'll need
+to do this as root.
 
 Configuration
 --------
@@ -37,10 +39,14 @@ arbitrary suggestions, put stuff where you like!
   text file to a large image, whatever is most reprensentative of your
   caching setup (if you serve lots of HTML/images/whatever). Store it
   at /etc/edgemanage/myobject.edgemanage and configure the
-  `testobject` section of `edgemanage.yaml` accordingly.
-* Set up your zone files - there needs to be a file for each domain
-  you want to use edgemanage for in `/etc/edgemanage/zones/mynet`,
-  named like `example.com.zone`. If you don't have any records other
-  than your rotating @ A records, simply create an empty file.
+  `testobject` section of `edgemanage.yaml` accordingly. Also deploy
+  this object to the edges that you will be querying.
+* Set up your zone include files - there needs to be a file for each
+  domain you want to use edgemanage for in
+  `/etc/edgemanage/zones/mynet`, named like `example.com.zone`. These
+  files need to be standard Bind-style files and the main limitation
+  is that they cannot contain an SOA record.  If you don't have any
+  records other than your rotating @ A records, simply create an empty
+  file.
 * Do a dry run to make sure everything's okay without writing any
   files out: `edge_manage -A mynet -n`
