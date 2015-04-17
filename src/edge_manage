@@ -17,6 +17,11 @@ import sys
 import time
 import yaml
 
+# Make requests stop logging so much. I love you but you need to shut
+# up.
+requests_log = logging.getLogger("requests")
+requests_log.setLevel(logging.WARNING)
+
 # TODO Wrap these functions and most of main in an object - everything
 # is messy as fuck.
 
@@ -74,6 +79,9 @@ def run_command_list(commands):
                 "Caught unhandled exception when running command %s: %s",
                 command, str(e)
             )
+        else:
+            logging.info("Executed command %s successfully", command)
+
     return None
 
 def future_fetch(edgetest, testobject_host, testobject_path,
@@ -224,6 +232,15 @@ def main(dnet, dry_run, config, state_obj):
         if edgelist.get_live_edges() != state_obj.last_live:
             state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
         state_obj.last_live = edgelist.get_live_edges()
+
+        if "live_list" in config:
+            livelist_path = config["live_list"]
+            if "{dnet}" in livelist_path:
+                livelist_path = livelist_path.format(dnet=dnet)
+
+            with open(livelist_path, "w") as livelist_f:
+                livelist_f.write("\n".join(edgelist.get_live_edges()) + "\n")
+
     else:
         logging.error("Couldn't establish full edge list! Only have %d edges (%s), need %d",
                       edgelist.get_live_count(), edgelist.get_live_edges(), config["edge_count"])

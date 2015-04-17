@@ -71,6 +71,10 @@ edge_count: 4
 # that your bind instance reads zone files from
 named_dir: /var/cache/bind/
 
+# File to output list of live edges to - the path may (and should!)
+# contain {dnet}
+live_list: /var/tmp/edges.{dnet}.live
+
 # Run commands before or after rotation. A good example of a run_after
 # is reloading your named, but in theory this could be anything!
 # Edgemanage doesn't wait for the process to return, so whatever this
