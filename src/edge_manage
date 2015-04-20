@@ -97,12 +97,6 @@ def future_fetch(edgetest, testobject_host, testobject_path,
 
 def main(dnet, dry_run, config, state_obj):
 
-    time_now = time.time()
-    if state_obj.last_run and not dry_run and int(state_obj.last_run) + 59 > int(time_now):
-        logging.error("Can't run - last run was %d, current time is %d",
-                      state_obj.last_run, time_now)
-        sys.exit(1)
-
     # Read the edgelist as a flat file
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
@@ -255,6 +249,8 @@ if __name__ == "__main__":
                         default=const.CONFIG_PATH)
     parser.add_argument("--dry-run", "-n", dest="dryrun", action="store_true",
                         help="Dry run - don't generate any files", default=False)
+    parser.add_argument("--force", dest="force", action="store_true",
+                        help="Force execution", default=False)
     parser.add_argument("--verbose", "-v", dest="verbose", action="store_true",
                         help="Verbose output", default=False)
     args = parser.parse_args()
@@ -281,6 +277,12 @@ if __name__ == "__main__":
     if os.path.exists(config["statefile"]):
         with open(config["statefile"]) as statefile_f:
             state = StateFile(json.loads(statefile_f.read()))
+
+    time_now = time.time()
+    if state.last_run and not args.dryrun and int(state.last_run) + 59 > int(time_now) and not args.force:
+        logging.error("Can't run - last run was %d, current time is %d",
+                      state.last_run, time_now)
+        sys.exit(1)
 
     if not acquire_lock(config["lockfile"]):
         raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")
