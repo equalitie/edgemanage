@@ -194,7 +194,7 @@ def main(dnet, dry_run, config, state_obj):
         else:
             # Entering an "else" in the context of a "for" loop means
             # "we didn't break". It's horrible but it's exactly what
-            # we need here. 💩
+            # we need here.
             logging.error("Tried to add edges from all acceptable states but failed")
             # TODO randomly try to add edges in a panic
 
