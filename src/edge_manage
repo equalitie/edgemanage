@@ -184,12 +184,6 @@ def main(dnet, dry_run, config, state_obj):
                 edgelist.add_edge(decision_edge, state=edge_state)
         logging.debug("List of previously passing edges is currently %s", edgelist.get_live_edges())
 
-        #if len(edgelist.get_edges("pass")) < config["edge_count"]:
-        #    logging.warning(("Don't have enough passing edges to supply a full "
-        #                     "list! (%d in pass state, %d healthy from last run)"),
-        #                    config["edge_count"], len(edgelist.get_edges("pass")))
-
-
         # Attempt to meet demand, first with passing, then with
         # window, then with average passing
         for state in ["pass", "pass_window", "pass_average"]:
@@ -200,7 +194,7 @@ def main(dnet, dry_run, config, state_obj):
         else:
             # Entering an "else" in the context of a "for" loop means
             # "we didn't break". It's horrible but it's exactly what
-            # we need here.
+            # we need here. 💩
             logging.error("Tried to add edges from all acceptable states but failed")
             # TODO randomly try to add edges in a panic
 

@@ -15,6 +15,11 @@
 @		IN	A	{{edge_ip}}
 {% endfor -%}
 
+{% for rotate_zone in rotate_zones -%}
+{% for edge_ip in live_edge_ips -%}
+{{rotate_zone}}		IN	A	{{edge_ip}}
+{% endfor -%}
+{% endfor -%}
 
 ;;; contents of {{domain}}.zone
 

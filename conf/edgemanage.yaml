@@ -23,6 +23,10 @@ dns:
   soa_nameserver: dns0.example.com.
   # The mailbox to write to SOA records
   soa_mailbox: zone.example.com.
+  # A list of labels to generate A records for with the balanced edge
+  # lists. This list automatically includes @ by default.
+  rotate_zones:
+    - www
 
 # Where health data for individual edges is stored
 healthdata_store: /var/lib/edgemanage/health/

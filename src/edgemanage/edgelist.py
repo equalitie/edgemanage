@@ -74,10 +74,15 @@ class EdgeList(object):
         if state:
             return selected_edges[0]
 
-    def generate_zone(self, domain, zonefile_dir, dns_config, serial_number=None):
+    def generate_zone(self, domain, zonefile_dir, dns_config,
+                      serial_number=None):
         if not all([ i.endswith(".") for i in dns_config["ns_records"] ]):
             raise Exception(("Nameserver list is incorrectly formatted. Every"
                              " entry should end with a full stop"))
+
+        rotate_zones = []
+        if "rotate_zones" in dns_config:
+            rotate_zones = dns_config["rotate_zones"]
 
         live_edge_ips = []
         for live_edge in self.get_live_edges():
@@ -107,6 +112,7 @@ class EdgeList(object):
             zonefile=zonefile,
             domain=domain,
             live_edge_ips=live_edge_ips,
+            rotate_zones=rotate_zones,
             serial_number=serial_number,
             soa_mailbox=dns_config["soa_mailbox"],
             soa_nameserver=dns_config["soa_nameserver"],

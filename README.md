@@ -17,9 +17,9 @@ regular intervals, usually via crontab. The designed usecase was every
 Edgemanage fetches an object from a lists of hosts over HTTP and uses
 the time taken to retrieve the object to make decisions about which
 hosts are healthiest. These hosts are then written to a zone file as A
-records for the apex of a domain, in addition to additional records in
-other files elsewhere. Simple checksumming of the local and remote
-objects also happens after fetching.
+records for the apex of a domain, in addition to inserting files
+stored in the zone includes directory. Simple checksumming of the
+local and remote objects also happens after fetching.
 
 The zone files that Edgemanage writes are created via Jinja templates,
 with SOA and NS data defined in the configuration file and the output
