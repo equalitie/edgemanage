@@ -89,7 +89,8 @@ class EdgeTest(object):
             raise FetchFailed(self, fetch_host,
                               fetch_object, response.text)
 
-        remote_hash = hashlib.md5(response.text).hexdigest()
+        remote_hash = hashlib.md5(response.content).hexdigest()
+
         if remote_hash != self.local_sum:
             logging.error("Failed to verify hash on %s!!", self.edgename)
             raise VerifyFailed(self, fetch_host,
