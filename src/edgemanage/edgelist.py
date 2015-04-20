@@ -97,7 +97,7 @@ class EdgeList(object):
                                    " hostname or remove this IP address from rotation."),
                                   live_edge)
                     continue
-            live_edge_ips.append(live_edge)
+            live_edge_ips.append(edge_ip)
 
         logging.debug("Writing zone file for %s, live edge list is %s",
                       domain, self.get_live_edges())
