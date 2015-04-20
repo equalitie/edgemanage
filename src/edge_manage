@@ -80,7 +80,7 @@ def run_command_list(commands):
                 command, str(e)
             )
         else:
-            logging.info("Executed command %s successfully", command)
+            logging.info("Started execution of command without issue: %s", command)
 
     return None
 
