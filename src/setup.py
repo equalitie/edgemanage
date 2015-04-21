@@ -11,6 +11,7 @@ setup(
     keywords = "edgemanage deflect DNS",
     url = "http://github.com/equalitie/edgemanage",
     packages=['edgemanage'],
+    package_data={'edgemanage': ['templates/*.j2']},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
