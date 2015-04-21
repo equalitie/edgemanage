@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import sys
 import time
 import json
@@ -33,10 +34,10 @@ class CheckRotation(object):
             perf_data = len(rotations)
             nagios_message = "%d in %d seconds" % (perf_data, ROTATION_PERIOD * 60)
 
-        if len(rotations) >= crit:
-            nagios_status = 2
-        elif len(rotations) >= warn:
-            nagios_status = 1
+            if len(rotations) >= crit:
+                nagios_status = 2
+            elif len(rotations) >= warn:
+                nagios_status = 1
 
         return (nagios_status, "%s %s %s | frequency=%d" % (OUTPUT_LABEL,
                                                             STATUS_MAP[nagios_status],
