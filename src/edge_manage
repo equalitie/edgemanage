@@ -21,6 +21,9 @@ import yaml
 # up.
 requests_log = logging.getLogger("requests")
 requests_log.setLevel(logging.WARNING)
+# Stop SSL errors on some platforms. Naughty but they're misleading.
+from requests.packages import urllib3
+urllib3.disable_warnings()
 
 # TODO Wrap these functions and most of main in an object - everything
 # is messy as fuck.
