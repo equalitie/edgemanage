@@ -109,7 +109,7 @@ class EdgeList(object):
             zonefile = zonefile_f.read()
 
         if not serial_number:
-            serial_number = time.time()
+            serial_number = int(time.time())
         template = env.get_template('zonetemplate.j2')
         return template.render(
             zonefile=zonefile,
