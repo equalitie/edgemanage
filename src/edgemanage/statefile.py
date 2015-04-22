@@ -30,8 +30,6 @@ class StateFile(object):
         ''' dump a representation of keys/vals for storage. '''
         return json.dumps(self.__dict__)
 
-    #def rotations_over_window(self):
-
     def last_rotation(self):
         if self.rotation_list:
             return self.rotation_list[-1]

@@ -8,9 +8,9 @@ import socket
 import time
 import os
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, PackageLoader
 
-env = Environment(loader=FileSystemLoader('edgemanage/templates'))
+env = Environment(loader=PackageLoader('edgemanage','templates'))
 
 class EdgeList(object):
     """ A class that represents a list of edges """
@@ -76,6 +76,8 @@ class EdgeList(object):
 
     def generate_zone(self, domain, zonefile_dir, dns_config,
                       serial_number=None):
+        logging.debug("Started generating zone for %s", domain)
+
         if not all([ i.endswith(".") for i in dns_config["ns_records"] ]):
             raise Exception(("Nameserver list is incorrectly formatted. Every"
                              " entry should end with a full stop"))
