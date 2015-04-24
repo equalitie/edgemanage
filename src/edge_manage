@@ -259,6 +259,17 @@ if __name__ == "__main__":
     with open(args.config_path) as config_f:
         config = yaml.safe_load(config_f.read())
 
+    state = StateFile()
+    if os.path.exists(config["statefile"]):
+        with open(config["statefile"]) as statefile_f:
+            state = StateFile(json.loads(statefile_f.read()))
+
+    time_now = time.time()
+    if state.last_run and not args.dryrun and int(state.last_run) + 50 > int(time_now) and not args.force:
+        logging.error("Can't run - last run was %d, current time is %d",
+                      state.last_run, time_now)
+        sys.exit(1)
+
     if args.verbose:
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
@@ -280,17 +291,6 @@ if __name__ == "__main__":
 
     if not args.dnet:
         raise AttributeError("DNET is a mandatory option")
-
-    state = StateFile()
-    if os.path.exists(config["statefile"]):
-        with open(config["statefile"]) as statefile_f:
-            state = StateFile(json.loads(statefile_f.read()))
-
-    time_now = time.time()
-    if state.last_run and not args.dryrun and int(state.last_run) + 59 > int(time_now) and not args.force:
-        logging.error("Can't run - last run was %d, current time is %d",
-                      state.last_run, time_now)
-        sys.exit(1)
 
     if not acquire_lock(config["lockfile"]):
         raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")
