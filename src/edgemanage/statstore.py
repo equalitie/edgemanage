@@ -63,7 +63,7 @@ class StatStore(object):
         for val_key, val_type in ASSUMED_VALS.iteritems():
             output[val_key] = getattr(self, val_key)
         with open(self.statfile, "w") as statfile_f:
-            json.dump(output, statfile_f)
+            json.dump(output, statfile_f, sort_keys=True, indent=4)
 
     def current_average(self):
         ''' Return an average of the current live set of values '''
