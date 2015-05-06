@@ -132,6 +132,7 @@ def main(dnet, dry_run, config, state_obj):
 
     decision = DecisionMaker()
     verification_failues = []
+    stat_stores = {}
 
     for f in as_completed(edgescore_futures):
         try:
@@ -145,6 +146,7 @@ def main(dnet, dry_run, config, state_obj):
             verification_failues.append(edge)
 
         stat_store = StatStore(edge, config["healthdata_store"], nowrite=dry_run)
+        stat_stores[edge] = stat_store
         stat_store.add_value(value)
         logging.info("Fetch time for %s: %f avg: %f",
                      edge, value, stat_store.current_average())
@@ -196,6 +198,10 @@ def main(dnet, dry_run, config, state_obj):
     if edgelist.get_live_count() == config["edge_count"]:
         logging.info("Successfully established %d edges: %s",
                      edgelist.get_live_count(), edgelist.get_live_edges())
+
+        # Note in the statefile that this edge has been put into rotation
+        for live_edge in edgelist.get_live_edges():
+            stat_stores[live_edge].add_rotation()
 
         # Iterate over every *zone file in the zonetemplate dir and write out files.
         for zonefile in glob.glob("%s/%s/*.zone" % (config["zonetemplate_dir"], dnet)):

@@ -91,6 +91,10 @@ class StatStore(object):
         ''' Get the most recent value stored '''
         return self.fetch_times[max(self.fetch_times)]
 
+    def add_rotation(self):
+        self.rotation_history.append(time.time())
+        self._dump()
+
     def add_value(self, new_value):
         '''Add a new value to the fetch times store and check if we
         need to make a historical average
