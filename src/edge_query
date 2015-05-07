@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+
+"""Tool for querying the state of edges.
+
+  edge_conf takes one of a number of parameters and filters, then
+ displays the corresponding edges. The behaviours of these modes can
+ be seen in edgemanage/const.py.
+
+"""
+
+__author__="nosmo@nosmo.me"
+
+from edgemanage import EdgeState
+from edgemanage.const import VALID_MODES, CONFIG_PATH
+
+import argparse
+import time
+import json
+import os
+
+import yaml
+
+def sep_output(output_tuple, verbose, quiet, output_char=" "):
+    chosen_fields = []
+    if verbose:
+        #mode state health edgename duration
+        chosen_fields = output_tuple
+    elif quiet:
+        chosen_fields = (output_tuple[3],)
+    else:
+        chosen_fields = (output_tuple[3], output_tuple[4])
+
+    print output_char.join(chosen_fields)
+
+def json_output(output_tuple, verbose, quiet):
+    # This is really dumb why just recreate a diction ah who cares
+
+    output_dict = {
+        "edge": output_tuple[3],
+    }
+    if not quiet:
+        output_dict["time_since_state_change"] = output_tuple[4]
+    if verbose:
+        output_dict["health"] = output_tuple[2]
+        output_dict["state"] = output_tuple[1]
+
+    print json.dumps(output_dict)
+
+def main(args):
+
+    with open(os.path.join(config["edgelist_dir"], args.dnet)) as edge_f:
+        edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
+
+    interested_edges = []
+    output_data = []
+
+    now = time.time()
+    for edge in edge_list:
+        edge_state = EdgeState(edge, config["healthdata_store"],
+                               nowrite=True)
+
+        interested = True
+        if args.health and edge_state.health != args.health:
+            interested = False
+        if args.state and edge_state.state != args.state:
+            interested = False
+        if args.mode and edge_state.mode != args.mode:
+            interested = False
+
+        if edge_state.state_entry_time:
+            state_time = now - edge_state.state_entry_time
+        else:
+            state_time = -1
+
+        if interested:
+            output_data.append((edge_state.mode, edge_state.state,
+                                edge_state.health,
+                                edge_state.edgename,
+                                str(state_time)))
+
+    for entry in output_data:
+        if args.format == "flat":
+            sep_output(entry, args.verbose, args.quiet, " ")
+        elif args.format == "csv":
+            sep_output(entry, args.verbose, args.quiet, ",")
+        else:
+            json_output(entry, args.verbose, args.quiet)
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Query Deflect edge status.')
+    parser.add_argument("--dnet", "-A", dest="dnet", action="store",
+                        help="Specify DNET", required=True)
+    parser.add_argument("--config", "-c", dest="config_path", action="store",
+                        help="Path to configuration file (defaults to %s)" % CONFIG_PATH,
+                        default=CONFIG_PATH)
+    parser.add_argument("--health", "-H", dest="health", action="store", default=None,
+                        help="Restrict output by edge health",
+                        choices=["good", "bad"])
+    parser.add_argument("--state", "-s", dest="state", action="store", default=None,
+                        help="Restrict output by edge state",
+                        choices=["out", "in"])
+    parser.add_argument("--mode", "-m", dest="mode", action="store", default=None,
+                        help="Restrict output by mode",
+                        choices=VALID_MODES)
+    parser.add_argument("--format", "-f", dest="format", action="store",
+                        help="Specify output format.", default="flat",
+                        choices=["flat", "csv", "json"])
+    parser.add_argument("--quiet", "-q", dest="quiet", action="store_true",
+                        help="List hostnames only, without details or state duration", default=False)
+    parser.add_argument("--verbose", "-v", dest="verbose", action="store_true",
+                        help=("Include full mode, state and health details for "
+                              "each matching host"), default=False)
+    args = parser.parse_args()
+
+    with open(args.config_path) as config_f:
+        config = yaml.safe_load(config_f.read())
+
+    main(args)
