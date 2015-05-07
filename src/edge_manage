@@ -35,7 +35,8 @@ def check_last_live(state_obj, decision_obj):
     still_healthy = []
 
     if state_obj.last_live:
-        logging.debug("Live edge list from previous run is %s", state_obj.last_live)
+        logging.debug("Live edge list from previous run is %s",
+                      state_obj.last_live)
 
     # Make sure that any edges that were in rotation are still
     # in a passing state. Discard any that are failing checks.
@@ -43,10 +44,15 @@ def check_last_live(state_obj, decision_obj):
         if oldlive_edge in decision_obj.current_judgement and \
            decision_obj.current_judgement[oldlive_edge] == "pass":
             still_healthy.append(oldlive_edge)
+        elif oldlive_edge not in decision_obj.current_judgement:
+            logging.warning(("Discarding previously live edge %s "
+                             "because it is no longer being checked",),
+                            oldlive_edge)
         else:
-            logging.debug("Discarding previously live edge %s because it is in state %s",
-                          oldlive_edge,
-                          decision_obj.current_judgement[oldlive_edge])
+            logging.debug(
+                "Discarding previously live edge %s because it is in state %s",
+                oldlive_edge,
+                decision_obj.current_judgement[oldlive_edge])
 
     return list(set(still_healthy))
 
@@ -160,7 +166,14 @@ def main(dnet, dry_run, config, state_obj):
         edge_states[edge].add_value(value)
         logging.info("Fetch time for %s: %f avg: %f",
                      edge, value, edge_states[edge].current_average())
-        decision.add_stat_store(edge_states[edge])
+
+        # Skip edges that we have forced out of commission
+        if edge_states[edge].mode == "unavailable":
+            logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
+        else:
+            # otherwise add it to the decision maker
+            decision.add_edge_state(edge_states[edge])
+
     threshold_stats = decision.check_threshold(config["goodenough"])
     state_obj.verification_failures = verification_failues
     logging.debug("Stats of threshold check are %s", str(threshold_stats))
@@ -205,11 +218,6 @@ def main(dnet, dry_run, config, state_obj):
         logging.info("Successfully established %d edges: %s",
                      edgelist.get_live_count(), edgelist.get_live_edges())
 
-        # Note in the statefile that this edge has been put into rotation
-        for live_edge in edgelist.get_live_edges():
-            edge_states[live_edge].add_rotation()
-            edge_states[live_edge].set_state("in")
-
         # Iterate over every *zone file in the zonetemplate dir and write out files.
         for zonefile in glob.glob("%s/%s/*.zone" % (config["zonetemplate_dir"], dnet)):
             zone_name = zonefile.split(".zone")[0].split("/")[-1]
@@ -248,6 +256,17 @@ def main(dnet, dry_run, config, state_obj):
                       edgelist.get_live_count(), edgelist.get_live_edges(), config["edge_count"])
         state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
         state_obj.last_live = edgelist.get_live_edges()
+
+    # We've got our edges, one way or another - let's set their states
+
+    # Note in the statefile that this edge has been put into rotation
+    for live_edge in edgelist.get_live_edges():
+        edge_states[live_edge].add_rotation()
+        edge_states[live_edge].set_state("in")
+
+    # Note that the remaining edges aren't in rotation
+    for unlive_edge in edgelist.get_unlive_edges():
+        edge_states[live_edge].set_state("out")
 
     if "commands" in config and "run_after" in config["commands"]:
         if config["commands"]["run_after"]:

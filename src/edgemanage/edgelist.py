@@ -34,10 +34,16 @@ class EdgeList(object):
         return len(self.get_live_edges())
 
     def get_live_edges(self):
+        return self.get_edges_by_liveness(True)
+
+    def get_unlive_edges(self):
+        return self.get_edges_by_liveness(False)
+
+    def get_edges_by_liveness(self, islive):
         edge_list = []
         for edge, state_dict in self.edges.iteritems():
 
-            if state_dict["live"]:
+            if state_dict["live"] == islive:
                 edge_list.append(edge)
         return sorted(edge_list)
 
