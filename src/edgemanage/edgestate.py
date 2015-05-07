@@ -16,6 +16,7 @@ ASSUMED_VALS={
     # A dict keyed by timestamps which keeps an average of fetch times
     # for FETCH_HISTORY days
     "historical_average": {},
+    "state": "out",
     "mode": "available",
     "health": "good",
     "state_entry_time": None,
@@ -68,14 +69,25 @@ class EdgeState(object):
         with open(self.statfile, "w") as statfile_f:
             json.dump(output, statfile_f, sort_keys=True, indent=4)
 
+    def set_state(self, state):
+        ''' Set the state of the edge - in or out '''
+        if state not in ["in", "out"]:
+            raise ValueError("State must be either in or out, not %s", state)
+        else:
+            if self.state != state:
+                self.state = state
+                self._dump()
+
     def set_mode(self, mode):
         ''' Set the mode of the edge '''
         if mode not in VALID_MODES:
             raise ValueError("Mode %s isn't in the set of valid modes (%s)",
                              mode, str(VALID_MODES))
         else:
-            self.mode = mode
-            self._dump()
+            if self.mode != mode:
+                self.state_entry_time = time.time()
+                self.mode = mode
+                self._dump()
 
     def current_average(self):
         ''' Return an average of the current live set of values '''
