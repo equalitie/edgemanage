@@ -25,3 +25,10 @@ STATE_HISTORICAL_ROTATIONS = 100
 # Upper domain to use for looking up IP addresses of edges while
 # populating zone files
 UPPER_DOMAIN="deflect.ca"
+
+# Valid modes that an edge can be set to
+#  available - available for use normally
+#  force - force an edge into service if it's eligible
+#  blindforce - force an edge into service no matter what
+#  unavailable - never use an edge
+VALID_MODES=["available", "force", "blindforce", "unavailable"]
