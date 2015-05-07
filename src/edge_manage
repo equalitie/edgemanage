@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from edgemanage import const, EdgeTest, StatStore, DecisionMaker, StateFile, EdgeList, VerifyFailed
+from edgemanage import const, EdgeTest, EdgeState, DecisionMaker, StateFile, EdgeList, VerifyFailed
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import argparse
@@ -145,7 +145,7 @@ def main(dnet, dry_run, config, state_obj):
         if value == False:
             verification_failues.append(edge)
 
-        stat_store = StatStore(edge, config["healthdata_store"], nowrite=dry_run)
+        stat_store = EdgeState(edge, config["healthdata_store"], nowrite=dry_run)
         stat_stores[edge] = stat_store
         stat_store.add_value(value)
         logging.info("Fetch time for %s: %f avg: %f",

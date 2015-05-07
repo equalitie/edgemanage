@@ -5,7 +5,7 @@ import logging
 import datetime
 import copy
 
-from const import FETCH_HISTORY
+from const import FETCH_HISTORY, VALID_MODES
 
 ASSUMED_VALS={
     # A list of timestamps of when this edge has been in rotation
@@ -15,14 +15,17 @@ ASSUMED_VALS={
     "fetch_times": {},
     # A dict keyed by timestamps which keeps an average of fetch times
     # for FETCH_HISTORY days
-    "historical_average": {}
+    "historical_average": {},
+    "mode": "available",
+    "health": "good",
+    "state_entry_time": None,
 }
 
-class StatStore(object):
+class EdgeState(object):
 
     def __init__(self, edgename, store_dir, nowrite=False):
         '''An object representing a simple set of time series data,
-        backed by a local JSON file store
+        backed by a local JSON file store. Also some state variables.
 
          Aka: Anything but RRD.
         '''
@@ -38,7 +41,7 @@ class StatStore(object):
                 # store.
                 try:
                     setattr(self, val_key, stat_info[val_key])
-                except AttributeError as e:
+                except KeyError as e:
                     # If the stat store lacks one of the keys in the
                     # dict, then initialise it with the default value
                     # from ASSUMED_VALS (usually just a type) - this
@@ -64,6 +67,15 @@ class StatStore(object):
             output[val_key] = getattr(self, val_key)
         with open(self.statfile, "w") as statfile_f:
             json.dump(output, statfile_f, sort_keys=True, indent=4)
+
+    def set_mode(self, mode):
+        ''' Set the mode of the edge '''
+        if mode not in VALID_MODES:
+            raise ValueError("Mode %s isn't in the set of valid modes (%s)",
+                             mode, str(VALID_MODES))
+        else:
+            self.mode = mode
+            self._dump()
 
     def current_average(self):
         ''' Return an average of the current live set of values '''
