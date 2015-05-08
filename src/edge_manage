@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from edgemanage import const, EdgeTest, StatStore, DecisionMaker, StateFile, EdgeList, VerifyFailed
+from edgemanage import const, EdgeTest, EdgeState, DecisionMaker, StateFile, EdgeList, VerifyFailed
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import argparse
@@ -18,6 +18,8 @@ import sys
 import time
 import yaml
 
+__author__="nosmo@nosmo.me"
+
 # Make requests stop logging so much. I love you but you need to shut
 # up.
 requests_log = logging.getLogger("requests")
@@ -33,7 +35,8 @@ def check_last_live(state_obj, decision_obj):
     still_healthy = []
 
     if state_obj.last_live:
-        logging.debug("Live edge list from previous run is %s", state_obj.last_live)
+        logging.debug("Live edge list from previous run is %s",
+                      state_obj.last_live)
 
     # Make sure that any edges that were in rotation are still
     # in a passing state. Discard any that are failing checks.
@@ -41,10 +44,15 @@ def check_last_live(state_obj, decision_obj):
         if oldlive_edge in decision_obj.current_judgement and \
            decision_obj.current_judgement[oldlive_edge] == "pass":
             still_healthy.append(oldlive_edge)
+        elif oldlive_edge not in decision_obj.current_judgement:
+            logging.warning(("Discarding previously live edge %s "
+                             "because it is no longer being checked",),
+                            oldlive_edge)
         else:
-            logging.debug("Discarding previously live edge %s because it is in state %s",
-                          oldlive_edge,
-                          decision_obj.current_judgement[oldlive_edge])
+            logging.debug(
+                "Discarding previously live edge %s because it is in state %s",
+                oldlive_edge,
+                decision_obj.current_judgement[oldlive_edge])
 
     return list(set(still_healthy))
 
@@ -98,10 +106,22 @@ def future_fetch(edgetest, testobject_host, testobject_path,
 
 def main(dnet, dry_run, config, state_obj):
 
+    # List of edges that will be made live
+    edgelist = EdgeList()
+    edge_states = {}
+    # Object we will use to make a decision about edge liveness based
+    # on the stat stores
+    decision = DecisionMaker()
+
     # Read the edgelist as a flat file
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
         logging.info("Edge list is %s", str(edge_list))
+
+    # Load or create our edge state files
+    for edge in edge_list:
+        edge_state = EdgeState(edge, config["healthdata_store"], nowrite=dry_run)
+        edge_states[edge] = edge_state
 
     testobject_proto = config["testobject"]["proto"]
     testobject_host = config["testobject"]["host"]
@@ -130,9 +150,7 @@ def main(dnet, dry_run, config, state_obj):
                                                      testobject_proto,
                                                      testobject_verify))
 
-    decision = DecisionMaker()
     verification_failues = []
-    stat_stores = {}
 
     for f in as_completed(edgescore_futures):
         try:
@@ -145,19 +163,20 @@ def main(dnet, dry_run, config, state_obj):
         if value == False:
             verification_failues.append(edge)
 
-        stat_store = StatStore(edge, config["healthdata_store"], nowrite=dry_run)
-        stat_stores[edge] = stat_store
-        stat_store.add_value(value)
+        edge_states[edge].add_value(value)
         logging.info("Fetch time for %s: %f avg: %f",
-                     edge, value, stat_store.current_average())
-        decision.add_stat_store(stat_store)
+                     edge, value, edge_states[edge].current_average())
+
+        # Skip edges that we have forced out of commission
+        if edge_states[edge].mode == "unavailable":
+            logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
+        else:
+            # otherwise add it to the decision maker
+            decision.add_edge_state(edge_states[edge])
+
     threshold_stats = decision.check_threshold(config["goodenough"])
     state_obj.verification_failures = verification_failues
     logging.debug("Stats of threshold check are %s", str(threshold_stats))
-
-    # List of edges that will be made live
-
-    edgelist = EdgeList()
 
     # Do we have a previous edge list?
     still_healthy_from_last_run = check_last_live(state_obj, decision)
@@ -199,10 +218,6 @@ def main(dnet, dry_run, config, state_obj):
         logging.info("Successfully established %d edges: %s",
                      edgelist.get_live_count(), edgelist.get_live_edges())
 
-        # Note in the statefile that this edge has been put into rotation
-        for live_edge in edgelist.get_live_edges():
-            stat_stores[live_edge].add_rotation()
-
         # Iterate over every *zone file in the zonetemplate dir and write out files.
         for zonefile in glob.glob("%s/%s/*.zone" % (config["zonetemplate_dir"], dnet)):
             zone_name = zonefile.split(".zone")[0].split("/")[-1]
@@ -242,6 +257,17 @@ def main(dnet, dry_run, config, state_obj):
         state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
         state_obj.last_live = edgelist.get_live_edges()
 
+    # We've got our edges, one way or another - let's set their states
+
+    # Note in the statefile that this edge has been put into rotation
+    for live_edge in edgelist.get_live_edges():
+        edge_states[live_edge].add_rotation()
+        edge_states[live_edge].set_state("in")
+
+    # Note that the remaining edges aren't in rotation
+    for unlive_edge in edgelist.get_unlive_edges():
+        edge_states[live_edge].set_state("out")
+
     if "commands" in config and "run_after" in config["commands"]:
         if config["commands"]["run_after"]:
             run_command_list(config["commands"]["run_after"])
@@ -250,7 +276,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Manage Deflect edge status.')
     parser.add_argument("--dnet", "-A", dest="dnet", action="store",
-                        help="Specify DNET (mandatory)")
+                        help="Specify DNET",
+                        required=True)
     parser.add_argument("--config", "-c", dest="config_path", action="store",
                         help="Path to configuration file (defaults to %s)" % const.CONFIG_PATH,
                         default=const.CONFIG_PATH)
@@ -294,9 +321,6 @@ if __name__ == "__main__":
 
     logging.debug("Command line options are %s", str(args))
     logging.debug("Full configuration is:\n %s", pprint.pformat(config))
-
-    if not args.dnet:
-        raise AttributeError("DNET is a mandatory option")
 
     if not acquire_lock(config["lockfile"]):
         raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")

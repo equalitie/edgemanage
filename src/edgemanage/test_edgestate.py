@@ -3,19 +3,20 @@
 import unittest
 import tempfile
 
-import statstore
+import edgestate
 
 TEST_EDGE = "testedge1"
 TEST_FETCH_HISTORY = 4
-statstore.FETCH_HISTORY = TEST_FETCH_HISTORY
+# Patch edgestate's import of const
+edgestate.FETCH_HISTORY = TEST_FETCH_HISTORY
 
-class StatStoreTest(unittest.TestCase):
+class EdgeStateTest(unittest.TestCase):
 
     # TODO load test JSON file to ensure object creation
 
     def testStoreAverage(self):
         store_dir = tempfile.mkdtemp()
-        a = statstore.StatStore(TEST_EDGE, store_dir)
+        a = edgestate.EdgeState(TEST_EDGE, store_dir)
 
         for i in range(4):
             a.add_value(2)
@@ -25,7 +26,7 @@ class StatStoreTest(unittest.TestCase):
 
     def testStoreRotation(self):
         store_dir = tempfile.mkdtemp()
-        a = statstore.StatStore(TEST_EDGE, store_dir)
+        a = edgestate.EdgeState(TEST_EDGE, store_dir)
 
         for i in range(5):
             a.add_value(2)

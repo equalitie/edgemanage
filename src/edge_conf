@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+"""
+Tool for manipulating the state of edges.
+
+  edge_conf takes the required mode parameter and sets the mode of an
+ edge to the corresponding mode. The behaviours of these modes can be
+ seen in edgemanage/const.py.
+
+"""
+
+__author__="nosmo@nosmo.me"
+
+from edgemanage import EdgeState
+from edgemanage.const import VALID_MODES, CONFIG_PATH
+
+import argparse
+import os
+
+import yaml
+
+def main(dnet, edgename, config, mode):
+
+    with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
+        edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
+
+    if edgename not in edge_list:
+        raise KeyError("Edge %s is not in the edge list of %s" % (edgename, dnet))
+
+    if not os.path.exists(os.path.join(config["healthdata_store"], "%s.edgestore" % edgename)):
+        raise Exception("Edge %s is not initialised yet - not setting status" % edgename)
+
+    edge_state = EdgeState(edgename, config["healthdata_store"], nowrite=False)
+    edge_state.set_mode(mode)
+    print "Set mode for %s to %s" % (edgename, mode)
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description='Configure Deflect edge mode.')
+    parser.add_argument("--config", "-c", dest="config_path", action="store",
+                        help="Path to configuration file (defaults to %s)" % CONFIG_PATH,
+                        default=CONFIG_PATH)
+    parser.add_argument("--dnet", "-A", dest="dnet", action="store",
+                        help="Specify DNET (mandatory)")
+    parser.add_argument("--edge", "-E", dest="edge", action="store",
+                        help="Specify edge")
+    parser.add_argument("--mode", "-m", dest="mode", action="store", default=None,
+                        help="Set mode", required=True,
+                        choices=VALID_MODES)
+    parser.add_argument("edge", action="store",
+                        help="Edge to configure", nargs=1)
+    args = parser.parse_args()
+
+    if not args.dnet and not args.edge:
+        raise Exception("Arguments must specify either a DNET or a specific edge")
+
+    with open(args.config_path) as config_f:
+        config = yaml.safe_load(config_f.read())
+
+    main(args.dnet, args.edge[0], config, args.mode)
