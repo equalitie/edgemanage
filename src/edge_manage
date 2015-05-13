@@ -107,7 +107,7 @@ def future_fetch(edgetest, testobject_host, testobject_path,
 def main(dnet, dry_run, config, state_obj):
 
     # List of edges that will be made live
-    edgelist = EdgeList()
+    edgelist_obj = EdgeList()
     edge_states = {}
     # Object we will use to make a decision about edge liveness based
     # on the stat stores
@@ -185,7 +185,7 @@ def main(dnet, dry_run, config, state_obj):
                      still_healthy_from_last_run)
 
     for still_healthy in still_healthy_from_last_run:
-        edgelist.add_edge(still_healthy, state="pass", live=True)
+        edgelist_obj.add_edge(still_healthy, state="pass", live=True)
 
     if len(still_healthy_from_last_run) == config["edge_count"]:
         logging.info(
@@ -196,14 +196,14 @@ def main(dnet, dry_run, config, state_obj):
                       "edge count - trying to add more edges"))
 
         for decision_edge, edge_state in decision.current_judgement.iteritems():
-            if decision_edge not in edgelist.edges:
-                edgelist.add_edge(decision_edge, state=edge_state)
-        logging.debug("List of previously passing edges is currently %s", edgelist.get_live_edges())
+            if decision_edge not in edgelist_obj.edges:
+                edgelist_obj.add_edge(decision_edge, state=edge_state)
+        logging.debug("List of previously passing edges is currently %s", edgelist_obj.get_live_edges())
 
         # Attempt to meet demand, first with passing, then with
         # window, then with average passing
         for state in ["pass", "pass_window", "pass_average"]:
-            filled_by_current_state = edgelist.set_live_by_state(state, config["edge_count"])
+            filled_by_current_state = edgelist_obj.set_live_by_state(state, config["edge_count"])
             if filled_by_current_state:
                 logging.info("Filled requirement for %d edges with edges in state %s", config["edge_count"], state)
                 break
@@ -214,14 +214,14 @@ def main(dnet, dry_run, config, state_obj):
             logging.error("Tried to add edges from all acceptable states but failed")
             # TODO randomly try to add edges in a panic
 
-    if edgelist.get_live_count() == config["edge_count"]:
+    if edgelist_obj.get_live_count() == config["edge_count"]:
         logging.info("Successfully established %d edges: %s",
-                     edgelist.get_live_count(), edgelist.get_live_edges())
+                     edgelist_obj.get_live_count(), edgelist_obj.get_live_edges())
 
         # Iterate over every *zone file in the zonetemplate dir and write out files.
         for zonefile in glob.glob("%s/%s/*.zone" % (config["zonetemplate_dir"], dnet)):
             zone_name = zonefile.split(".zone")[0].split("/")[-1]
-            complete_zone_str = edgelist.generate_zone(
+            complete_zone_str = edgelist_obj.generate_zone(
                 zone_name, os.path.join(config["zonetemplate_dir"], dnet),
                 config["dns"]
             )
@@ -239,9 +239,9 @@ def main(dnet, dry_run, config, state_obj):
                               complete_zone_path, zone_name, complete_zone_str)
 
         # There has been a rotation as our old list doesn't equal the new
-        if edgelist.get_live_edges() != state_obj.last_live:
+        if edgelist_obj.get_live_edges() != state_obj.last_live:
             state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
-        state_obj.last_live = edgelist.get_live_edges()
+        state_obj.last_live = edgelist_obj.get_live_edges()
 
         if "live_list" in config:
             livelist_path = config["live_list"]
@@ -249,24 +249,25 @@ def main(dnet, dry_run, config, state_obj):
                 livelist_path = livelist_path.format(dnet=dnet)
 
             with open(livelist_path, "w") as livelist_f:
-                livelist_f.write("\n".join(edgelist.get_live_edges()) + "\n")
+                livelist_f.write("\n".join(edgelist_obj.get_live_edges()) + "\n")
 
     else:
         logging.error("Couldn't establish full edge list! Only have %d edges (%s), need %d",
-                      edgelist.get_live_count(), edgelist.get_live_edges(), config["edge_count"])
+                      edgelist_obj.get_live_count(), edgelist_obj.get_live_edges(), config["edge_count"])
         state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
-        state_obj.last_live = edgelist.get_live_edges()
+        state_obj.last_live = edgelist_obj.get_live_edges()
 
     # We've got our edges, one way or another - let's set their states
 
     # Note in the statefile that this edge has been put into rotation
-    for live_edge in edgelist.get_live_edges():
-        edge_states[live_edge].add_rotation()
-        edge_states[live_edge].set_state("in")
-
-    # Note that the remaining edges aren't in rotation
-    for unlive_edge in edgelist.get_unlive_edges():
-        edge_states[live_edge].set_state("out")
+    for edge in edge_list:
+        if edgelist_obj.is_live(edge):
+            logging.debug("Setting edge %s to state in", edge)
+            edge_states[edge].add_rotation()
+            edge_states[edge].set_state("in")
+        else:
+            logging.debug("Setting edge %s to state out", edge)
+            edge_states[edge].set_state("out")
 
     if "commands" in config and "run_after" in config["commands"]:
         if config["commands"]["run_after"]:

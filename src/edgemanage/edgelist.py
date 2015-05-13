@@ -39,6 +39,12 @@ class EdgeList(object):
     def get_unlive_edges(self):
         return self.get_edges_by_liveness(False)
 
+    def is_live(self, edgename):
+        if edgename in self.edges:
+            return self.edges[edgename]["live"]
+        else:
+            return None
+
     def get_edges_by_liveness(self, islive):
         edge_list = []
         for edge, state_dict in self.edges.iteritems():
