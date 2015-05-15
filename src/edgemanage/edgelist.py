@@ -26,6 +26,9 @@ class EdgeList(object):
             "state": state
         }
 
+    def __len__(self):
+        return len(self.edges.keys())
+
     def get_state_stats(self):
         counter = Counter([ edge["state"] for edge in self.edges.values() ])
         return dict(counter)
