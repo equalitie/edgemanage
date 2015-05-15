@@ -17,6 +17,9 @@ class DecisionMaker(object):
         self.edge_states[edge_state.edgename] = edge_state
         self.current_judgement[edge_state.edgename] = None
 
+    def get_judgement(self, edgename):
+        return self.current_judgement[edgename]
+
     def check_threshold(self, good_enough):
 
         ''' Check fetch response times for being under the given

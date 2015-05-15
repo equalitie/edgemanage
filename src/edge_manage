@@ -42,7 +42,7 @@ def check_last_live(state_obj, decision_obj):
     # in a passing state. Discard any that are failing checks.
     for oldlive_edge in state_obj.last_live:
         if oldlive_edge in decision_obj.current_judgement and \
-           decision_obj.current_judgement[oldlive_edge] == "pass":
+           decision_obj.get_judgement(oldlive_edge) == "pass":
             still_healthy.append(oldlive_edge)
         elif oldlive_edge not in decision_obj.current_judgement:
             logging.warning(("Discarding previously live edge %s "
@@ -175,6 +175,15 @@ def main(dnet, dry_run, config, state_obj):
             decision.add_edge_state(edge_states[edge])
 
     threshold_stats = decision.check_threshold(config["goodenough"])
+    for edgename, edge_state in edge_states.iteritems():
+        if edge_state.mode == "force":
+            if decision.get_judgement(edgename) == "pass":
+                logging.debug("Making host %s live because it is in mode force and it is in state pass", edgename)
+                edgelist_obj.add_edge(edgename, state="Pass", live=True)
+        elif edge_state.mode == "blindforce":
+            logging.debug("Making host %s live bceause it is in mode blindforce.", edgename)
+            edgelist_obj.add_edge(edgename, state="Pass", live=True)
+
     state_obj.verification_failures = verification_failues
     logging.debug("Stats of threshold check are %s", str(threshold_stats))
 
@@ -185,7 +194,8 @@ def main(dnet, dry_run, config, state_obj):
                      still_healthy_from_last_run)
 
     for still_healthy in still_healthy_from_last_run:
-        edgelist_obj.add_edge(still_healthy, state="pass", live=True)
+        if len(edgelist_obj) < config["edge_count"]:
+            edgelist_obj.add_edge(still_healthy, state="pass", live=True)
 
     if len(still_healthy_from_last_run) == config["edge_count"]:
         logging.info(
@@ -299,8 +309,10 @@ if __name__ == "__main__":
             state = StateFile(json.loads(statefile_f.read()))
 
     time_now = time.time()
-    if state.last_run and not args.dryrun and int(state.last_run) + 50 > int(time_now) and not args.force:
-        logging.error("Can't run - last run was %d, current time is %d. Bypass this check at your own risk with --force",
+    if state.last_run and not args.dryrun and \
+       int(state.last_run) + 50 > int(time_now) and not args.force:
+        logging.error(("Can't run - last run was %d, current time is %d. Bypass"
+                       " this check at your own risk with --force"),
                       state.last_run, time_now)
         sys.exit(1)
 
@@ -308,7 +320,9 @@ if __name__ == "__main__":
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler() # log to STDERR
-        handler.setFormatter(logging.Formatter('edgemanage (%(process)d): %(levelname)s %(message)s'))
+        handler.setFormatter(
+            logging.Formatter('edgemanage (%(process)d): %(levelname)s %(message)s')
+        )
         logger.addHandler(handler)
 
     else:
