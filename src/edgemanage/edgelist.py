@@ -8,9 +8,18 @@ import socket
 import time
 import os
 
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, PackageLoader, FileSystemLoader
 
-env = Environment(loader=PackageLoader('edgemanage','templates'))
+try:
+    env = Environment(loader=PackageLoader('edgemanage','templates'))
+except ImportError as e:
+    # we're not installed as a module
+    if os.path.exists("edgemanage/templates") and os.path.isdir("edgemanage/templates"):
+        env = Environment(loader=FileSystemLoader("edgemanage/templates"))
+    elif os.path.exists("templates") and os.path.isdir("templates"):
+        env = Environment(loader=FileSystemLoader("templates"))
+    else:
+        raise
 
 class EdgeList(object):
     """ A class that represents a list of edges """
