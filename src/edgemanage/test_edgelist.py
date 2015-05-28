@@ -27,13 +27,14 @@ class EdgeListTest(unittest.TestCase):
         a.add_edge("test3")
         self.assertEqual(len(a), 3)
 
-    def test_live_count(self):
+    def test_liveness_operations(self):
         a = EdgeList()
         a.add_edge("test1", live=True)
         a.add_edge("test2")
         a.add_edge("test3")
         a.set_edge_live("test2")
         self.assertEqual(a.get_live_count(), 2)
+        self.assertTrue(a.is_live("test1"))
 
     def test_state_operations(self):
         a = EdgeList()
@@ -45,6 +46,7 @@ class EdgeListTest(unittest.TestCase):
         a.add_edge("test5", state="satan")
         a.add_edge("test6", state="pass")
 
+        self.assertEqual(a.get_state_stats(), {'fail': 1, None: 1, 'satan': 1, 'pass': 3})
         self.assertTrue(a.set_live_by_state("pass", 2))
         self.assertEqual(a.get_live_count(), 2)
         self.assertEqual(len(a.get_edges("pass")), 3)
