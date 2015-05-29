@@ -71,6 +71,9 @@ def acquire_lock(lockfile):
     return True
 
 def run_command_list(commands):
+    if not commands:
+        return None
+
     for command in commands:
         # Subprocess wants a list. This will complicate things for
         # people using complex strings but for now that's too bad.
