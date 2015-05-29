@@ -197,7 +197,11 @@ def main(dnet, dry_run, config, state_obj):
     state_obj.verification_failures = verification_failues
     logging.debug("Stats of threshold check are %s", str(threshold_stats))
 
+    # Has the edgelist changed since last iteration?
     edgelist_changed = None
+    # Have ANY changes happened since last iteration? Including zone
+    # updates.
+    any_changes = False
 
     # Do we have a previous edge list?
     still_healthy_from_last_run = check_last_live(state_obj, decision)
@@ -250,8 +254,11 @@ def main(dnet, dry_run, config, state_obj):
             # * don't write out updated zone files when we aren't changing edge list
             old_mtime = state_obj.zone_mtimes.get(zone_name)
             if not edgelist_changed and old_mtime and old_mtime == current_mtimes[zone_name]:
-                logging.info("Not writing zonefile for %s because there are no changes pending", zone_name)
+                logging.info("Not writing zonefile for %s because there are no changes pending",
+                             zone_name)
                 continue
+            else:
+                any_changes = True
 
             complete_zone_str = edgelist_obj.generate_zone(
                 zone_name, os.path.join(config["zonetemplate_dir"], dnet),
@@ -302,9 +309,13 @@ def main(dnet, dry_run, config, state_obj):
 
     state_obj.zone_mtimes = current_mtimes
 
-    if "commands" in config and "run_after" in config["commands"]:
-        if config["commands"]["run_after"]:
-            run_command_list(config["commands"]["run_after"])
+    if "commands" in config:
+        run_after_section = config["commands"].get("run_after", [])
+        run_command_list(run_after_section)
+
+        if any_changes:
+            run_after_changes_section = config["commands"].get("run_after_changes", [])
+            run_command_list(run_after_changes_section)
 
 if __name__ == "__main__":
 
