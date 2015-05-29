@@ -118,6 +118,16 @@ def main(dnet, dry_run, config, state_obj):
         edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
         logging.info("Edge list is %s", str(edge_list))
 
+    # Get a complete list of zone names
+    zone_names = []
+    current_mtimes = {}
+    for zonefile in glob.glob("%s/%s/*.zone" % (config["zonetemplate_dir"], dnet)):
+        zone_name = zonefile.split(".zone")[0].split("/")[-1]
+        zone_names.append(zone_name)
+        # And while we're here, let's get their mtimes
+        current_mtime = int(os.stat(zonefile).st_mtime)
+        current_mtimes[zone_name] = current_mtime
+
     # Load or create our edge state files
     for edge in edge_list:
         edge_state = EdgeState(edge, config["healthdata_store"], nowrite=dry_run)
@@ -187,9 +197,12 @@ def main(dnet, dry_run, config, state_obj):
     state_obj.verification_failures = verification_failues
     logging.debug("Stats of threshold check are %s", str(threshold_stats))
 
+    edgelist_changed = None
+
     # Do we have a previous edge list?
     still_healthy_from_last_run = check_last_live(state_obj, decision)
     if still_healthy_from_last_run:
+        edgelist_changed = False
         logging.info("Got list of previously in use edges that are in a passing state: %s",
                      still_healthy_from_last_run)
 
@@ -204,6 +217,7 @@ def main(dnet, dry_run, config, state_obj):
     else:
         logging.debug(("Didn't have enough healthy edges from last run to meet "
                       "edge count - trying to add more edges"))
+        edgelist_changed = True
 
         for decision_edge, edge_state in decision.current_judgement.iteritems():
             if decision_edge not in edgelist_obj.edges:
@@ -228,9 +242,17 @@ def main(dnet, dry_run, config, state_obj):
         logging.info("Successfully established %d edges: %s",
                      edgelist_obj.get_live_count(), edgelist_obj.get_live_edges())
 
-        # Iterate over every *zone file in the zonetemplate dir and write out files.
-        for zonefile in glob.glob("%s/%s/*.zone" % (config["zonetemplate_dir"], dnet)):
-            zone_name = zonefile.split(".zone")[0].split("/")[-1]
+        # Write out every qualifying zone file
+        for zone_name in zone_names:
+
+            # * Skip files that haven't been changed
+            # * Write out zone files we haven't seen before
+            # * don't write out updated zone files when we aren't changing edge list
+            old_mtime = state_obj.zone_mtimes.get(zone_name)
+            if not edgelist_changed and old_mtime and old_mtime == current_mtimes[zone_name]:
+                logging.info("Not writing zonefile for %s because there are no changes pending", zone_name)
+                continue
+
             complete_zone_str = edgelist_obj.generate_zone(
                 zone_name, os.path.join(config["zonetemplate_dir"], dnet),
                 config["dns"]
@@ -268,16 +290,17 @@ def main(dnet, dry_run, config, state_obj):
         state_obj.last_live = edgelist_obj.get_live_edges()
 
     # We've got our edges, one way or another - let's set their states
-
-    # Note in the statefile that this edge has been put into rotation
     for edge in edge_list:
         if edgelist_obj.is_live(edge):
+            # Note in the statefile that this edge has been put into rotation
             logging.debug("Setting edge %s to state in", edge)
             edge_states[edge].add_rotation()
             edge_states[edge].set_state("in")
         else:
             logging.debug("Setting edge %s to state out", edge)
             edge_states[edge].set_state("out")
+
+    state_obj.zone_mtimes = current_mtimes
 
     if "commands" in config and "run_after" in config["commands"]:
         if config["commands"]["run_after"]:

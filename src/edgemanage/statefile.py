@@ -15,6 +15,8 @@ class StateFile(object):
         self.last_live = []
         # A list of failures last run
         self.verification_failues = []
+        # A list of mtimes for zonefiles
+        self.zone_mtimes = {}
 
         # Restore any existing saved values - setting values above
         # this means that we can add new values to the state file
