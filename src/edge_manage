@@ -104,7 +104,18 @@ def future_fetch(edgetest, testobject_host, testobject_path,
         fetch_result = False
     return {edgetest.edgename: fetch_result}
 
-def main(dnet, dry_run, config, state_obj):
+class EdgeManage(object):
+
+    def __init__(dnet, config, state, dry_run=False):
+        self.dnet = dnet
+        self.dry_run = dry_run
+        self.config = config
+        self.state_obj = state
+
+def main(dnet, daemonise, dry_run, config, state):
+    edgemanage_object = EdgeManage(dnet, config, state, dry_run)
+
+def oldmain(dnet, dry_run, config, state_obj):
 
     # List of edges that will be made live
     edgelist_obj = EdgeList()
@@ -296,6 +307,9 @@ if __name__ == "__main__":
                         help="Dry run - don't generate any files", default=False)
     parser.add_argument("--force", dest="force", action="store_true",
                         help="Force execution", default=False)
+    parser.add_argument("--daemonise", dest="daemonise", action="store_true",
+                        help="Run as a daemon, executing as often as is defined in config",
+                        default=False)
     parser.add_argument("--verbose", "-v", dest="verbose", action="store_true",
                         help="Verbose output", default=False)
     args = parser.parse_args()
@@ -340,7 +354,7 @@ if __name__ == "__main__":
     if not acquire_lock(config["lockfile"]):
         raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")
     else:
-        main(args.dnet, args.dryrun, config, state)
+        oldmain(args.dnet, args.daemonise, args.dryrun, config, state)
     state.set_last_run()
     if not args.dryrun:
         with open(config["statefile"], "w") as statefile_f:
