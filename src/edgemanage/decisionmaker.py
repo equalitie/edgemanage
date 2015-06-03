@@ -1,16 +1,14 @@
-from const import DECISION_SLICE_WINDOW
+from const import DECISION_SLICE_WINDOW, VALID_HEALTHS
 
 import logging
 import time
-
-VALID_STATUSES = ["pass", "fail", "pass_window", "pass_average"]
 
 class DecisionMaker(object):
 
     def __init__(self):
         self.edge_states = {}
         # A results dict with edge as key, string as value, one of
-        # VALID_STATUSES
+        # VALID_HEALTHS
         self.current_judgement = {}
 
     def add_edge_state(self, edge_state):
@@ -29,7 +27,7 @@ class DecisionMaker(object):
 
         # dict for stats to return
         results_dict = {}
-        for statusname in VALID_STATUSES:
+        for statusname in VALID_HEALTHS:
             results_dict[statusname] = 0
 
         for edgename, edge_state in self.edge_states.iteritems():

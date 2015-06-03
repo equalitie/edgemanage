@@ -192,10 +192,10 @@ def main(dnet, dry_run, config, state_obj):
         if edge_state.mode == "force":
             if decision.get_judgement(edgename) == "pass":
                 logging.debug("Making host %s live because it is in mode force and it is in state pass", edgename)
-                edgelist_obj.add_edge(edgename, state="Pass", live=True)
+                edgelist_obj.add_edge(edgename, state="pass", live=True)
         elif edge_state.mode == "blindforce":
             logging.debug("Making host %s live bceause it is in mode blindforce.", edgename)
-            edgelist_obj.add_edge(edgename, state="Pass", live=True)
+            edgelist_obj.add_edge(edgename, state="pass", live=True)
 
     state_obj.verification_failures = verification_failues
     logging.debug("Stats of threshold check are %s", str(threshold_stats))
@@ -309,6 +309,9 @@ def main(dnet, dry_run, config, state_obj):
         else:
             logging.debug("Setting edge %s to state out", edge)
             edge_states[edge].set_state("out")
+
+        current_health = decision.get_judgement(edge)
+        edge_states[edge].set_health(current_health)
 
     state_obj.zone_mtimes = current_mtimes
 
