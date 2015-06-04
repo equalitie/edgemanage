@@ -163,7 +163,15 @@ if __name__ == "__main__":
     if not acquire_lock(config["lockfile"]):
         raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")
     else:
-        main(args.dnet, args.daemonise, args.dryrun, config, state)
+        if args.daemonise:
+            if not "run_frequency" in config:
+                raise KeyError("Daemonisation requested but no run_frequency in config file")
+            while True:
+                main(args.dnet, args.daemonise, args.dryrun, config, state)
+                time.sleep(config["run_frequency"])
+        else:
+            main(args.dnet, args.daemonise, args.dryrun, config, state)
+
     state.set_last_run()
     if not args.dryrun:
         with open(config["statefile"], "w") as statefile_f:
