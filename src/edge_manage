@@ -310,8 +310,9 @@ def main(dnet, dry_run, config, state_obj):
             logging.debug("Setting edge %s to state out", edge)
             edge_states[edge].set_state("out")
 
-        current_health = decision.get_judgement(edge)
-        edge_states[edge].set_health(current_health)
+        if edge_states[edge].mode != "unavailable":
+            current_health = decision.get_judgement(edge)
+            edge_states[edge].set_health(current_health)
 
     state_obj.zone_mtimes = current_mtimes
 
