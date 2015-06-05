@@ -9,6 +9,11 @@ import const
 # external
 import requests
 
+# Make requests stop logging so much. I love you but you need to shut
+# up.
+requests_log = logging.getLogger("requests")
+requests_log.setLevel(logging.WARNING)
+
 USER_AGENT="Edgemanage v2 (https://github.com/equalitie/edgemanage)"
 
 class FetchFailed(Exception):

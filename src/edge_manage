@@ -3,6 +3,7 @@
 from edgemanage import const, EdgeManage, StateFile
 
 import argparse
+import atexit
 import fcntl
 import json
 import logging
@@ -14,13 +15,51 @@ import sys
 import time
 import yaml
 
+import setproctitle
+
 __author__="nosmo@nosmo.me"
 
-# Make requests stop logging so much. I love you but you need to shut
-# up.
-requests_log = logging.getLogger("requests")
-requests_log.setLevel(logging.WARNING)
+def daemon_setup():
+    # First fork
+    try:
+        pid = os.fork()
+        if pid > 0:
+            # exit first parent
+            sys.exit(0)
+    except OSError, e:
+        sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
+        sys.exit(1)
 
+    # Don't hang onto any files accidentally
+    os.chdir("/")
+    # Decouple from our environment
+    os.setsid()
+    os.umask(0)
+
+    # Second fork
+    try:
+        pid = os.fork()
+        if pid > 0:
+            # exit if second parent
+            sys.exit(0)
+    except OSError, e:
+        sys.stderr.write("Second fork failed: %d (%s)\n" % (e.errno, e.strerror))
+        sys.exit(1)
+
+    # redirect standard file descriptors
+    sys.stdout.flush()
+    sys.stderr.flush()
+    si = file("/dev/null", 'r')
+    so = file("/dev/null", 'a+')
+    #se = file("/dev/null", 'a+', 0)
+    os.dup2(si.fileno(), sys.stdin.fileno())
+    os.dup2(so.fileno(), sys.stdout.fileno())
+    #os.dup2(se.fileno(), sys.stderr.fileno())
+
+    # write pidfile
+    #atexit.register(self.delpid)
+    #pid = str(os.getpid())
+    #file(self.pidfile,'w+').write("%s\n" % pid)
 
 def acquire_lock(lockfile):
     # Attempt to lock a file so that we don't have overlapping runs
@@ -126,6 +165,8 @@ if __name__ == "__main__":
     with open(args.config_path) as config_f:
         config = yaml.safe_load(config_f.read())
 
+    setproctitle.setproctitle("edge_manage %s" % " ".join(sys.argv[1:]))
+
     state = StateFile()
     if os.path.exists(config["statefile"]):
         with open(config["statefile"]) as statefile_f:
@@ -166,6 +207,13 @@ if __name__ == "__main__":
         if args.daemonise:
             if not "run_frequency" in config:
                 raise KeyError("Daemonisation requested but no run_frequency in config file")
+
+            # If we're running in verbose mode we can still behave in
+            # a "daemonic" way without actually forking and going to
+            # background. Sorta.
+            if args.daemonise and not args.verbose:
+                daemon_setup()
+
             while True:
                 main(args.dnet, args.daemonise, args.dryrun, config, state)
                 time.sleep(config["run_frequency"])

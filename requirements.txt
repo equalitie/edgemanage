@@ -2,3 +2,4 @@ requests
 jinja2
 futures
 PyYAML
+setproctitle
