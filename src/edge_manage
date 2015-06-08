@@ -285,7 +285,7 @@ def main(dnet, dry_run, config, state_obj):
             state_obj.add_rotation(const.STATE_HISTORICAL_ROTATIONS)
         state_obj.last_live = edgelist_obj.get_live_edges()
 
-        if "live_list" in config:
+        if any_changes and "live_list" in config:
             livelist_path = config["live_list"]
             if "{dnet}" in livelist_path:
                 livelist_path = livelist_path.format(dnet=dnet)
