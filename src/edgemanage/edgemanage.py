@@ -33,6 +33,7 @@ class EdgeManage(object):
         self.edge_states = {}
 
         self.testobject_hash = self.get_testobject_hash()
+        self.current_mtimes = self.zone_mtime_setup()
 
     def get_testobject_hash(self):
         # Hash the local copy of the object to be requested from the edges
@@ -51,6 +52,15 @@ class EdgeManage(object):
 
         self._init_objects()
 
+    def zone_mtime_setup(self):
+        # Get a complete list of zone names
+        current_mtimes = {}
+        for zonefile in glob.glob("%s/%s/*.zone" % (self.config["zonetemplate_dir"], self.dnet)):
+            zone_name = zonefile.split(".zone")[0].split("/")[-1]
+            # And while we're here, let's get their mtimes
+            current_mtime = int(os.stat(zonefile).st_mtime)
+            current_mtimes[zone_name] = current_mtime
+        return current_mtimes
 
     def add_edge_state(self, edge, edge_healthdata_path, nowrite=False):
         edge_state = EdgeState(edge, edge_healthdata_path, nowrite=nowrite)
@@ -101,19 +111,19 @@ class EdgeManage(object):
 
         return verification_failues
 
-    def check_last_live(self, state_obj):
+    def check_last_live(self):
 
         # A list of edges that were in use last time that are still
         # healthy now.
         still_healthy = []
 
-        if state_obj.last_live:
+        if self.state_obj.last_live:
             logging.debug("Live edge list from previous run is %s",
-                          state_obj.last_live)
+                          self.state_obj.last_live)
 
         # Make sure that any edges that were in rotation are still
         # in a passing state. Discard any that are failing checks.
-        for oldlive_edge in state_obj.last_live:
+        for oldlive_edge in self.state_obj.last_live:
             if oldlive_edge in self.decision.current_judgement and \
                self.decision.get_judgement(oldlive_edge) == "pass":
                 still_healthy.append(oldlive_edge)
@@ -129,7 +139,9 @@ class EdgeManage(object):
 
         return list(set(still_healthy))
 
-    def make_edges_live(self, state_obj):
+    def make_edges_live(self):
+
+        # Returns true if any changes were made.
 
         good_enough = self.config["goodenough"]
         required_edge_count = self.config["edge_count"]
@@ -141,17 +153,24 @@ class EdgeManage(object):
                     logging.debug(
                         "Making host %s live because it is in mode force and it is in state pass",
                         edgename)
-                    self.edgelist_obj.add_edge(edgename, state="Pass", live=True)
+                    self.edgelist_obj.add_edge(edgename, state="pass", live=True)
             elif edge_state.mode == "blindforce":
                 logging.debug("Making host %s live bceause it is in mode blindforce.",
                               edgename)
-                self.edgelist_obj.add_edge(edgename, state="Pass", live=True)
+                self.edgelist_obj.add_edge(edgename, state="pass", live=True)
 
         logging.debug("Stats of threshold check are %s", str(threshold_stats))
 
+        # Has the edgelist changed since last iteration?
+        edgelist_changed = None
+        # Have ANY changes happened since last iteration? Including zone
+        # updates.
+        any_changes = False
+
         # Do we have a previous edge list?
-        still_healthy_from_last_run = self.check_last_live(state_obj)
+        still_healthy_from_last_run = self.check_last_live()
         if still_healthy_from_last_run:
+            edgelist_changed = False
             logging.info("Got list of previously in use edges that are in a passing state: %s",
                          still_healthy_from_last_run)
 
@@ -166,6 +185,7 @@ class EdgeManage(object):
         else:
             logging.debug(("Didn't have enough healthy edges from last run to meet "
                            "edge count - trying to add more edges"))
+            edgelist_changed = True
 
             for decision_edge, edge_state in self.decision.current_judgement.iteritems():
                 if decision_edge not in self.edgelist_obj.edges:
@@ -195,9 +215,19 @@ class EdgeManage(object):
                          self.edgelist_obj.get_live_edges())
 
             # Iterate over every *zone file in the zonetemplate dir and write out files.
-            zone_glob_path = "%s/%s/*.zone" % (self.config["zonetemplate_dir"], self.dnet)
-            for zonefile in glob.glob(zone_glob_path):
-                zone_name = zonefile.split(".zone")[0].split("/")[-1]
+            for zone_name in self.current_mtimes:
+
+                # * Skip files that haven't been changed
+                # * Write out zone files we haven't seen before
+                # * don't write out updated zone files when we aren't changing edge list
+                old_mtime = self.state_obj.zone_mtimes.get(zone_name)
+                if not edgelist_changed and old_mtime and old_mtime == self.current_mtimes[zone_name]:
+                    logging.info("Not writing zonefile for %s because there are no changes pending",
+                                 zone_name)
+                    continue
+                else:
+                    any_changes = True
+
                 complete_zone_str = self.edgelist_obj.generate_zone(
                     zone_name, os.path.join(self.config["zonetemplate_dir"], self.dnet),
                     self.config["dns"]
@@ -227,6 +257,7 @@ class EdgeManage(object):
         # Note in the statefile that this edge has been put into rotation
         for edge in self.edge_states:
             if self.edgelist_obj.is_live(edge):
+                # Note in the statefile that this edge has been put into rotation
                 logging.debug("Setting edge %s to state in", edge)
                 self.edge_states[edge].add_rotation()
                 self.edge_states[edge].set_state("in")
@@ -234,5 +265,10 @@ class EdgeManage(object):
                 logging.debug("Setting edge %s to state out", edge)
                 self.edge_states[edge].set_state("out")
 
-        #TODO
-        return
+            if self.edge_states[edge].mode != "unavailable":
+                current_health = self.decision.get_judgement(edge)
+                self.edge_states[edge].set_health(current_health)
+
+        self.state_obj.zone_mtimes = self.current_mtimes
+
+        return any_changes

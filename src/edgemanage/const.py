@@ -36,3 +36,7 @@ UPPER_DOMAIN = "deflect.ca"
 #  blindforce - force an edge into service no matter what
 #  unavailable - never use an edge
 VALID_MODES = ["available", "force", "blindforce", "unavailable"]
+
+# Valid states that an edge will be put into after a result of a
+# decision being passed upon tests.
+VALID_HEALTHS = ["pass", "fail", "pass_window", "pass_average"]

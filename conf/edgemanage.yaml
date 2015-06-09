@@ -28,6 +28,9 @@ dns:
   rotate_zones:
     - www
 
+# If run as a daemon, how often should tests be run?
+run_frequency: 60
+
 # Where health data for individual edges is stored
 healthdata_store: /var/lib/edgemanage/health/
 
@@ -79,11 +82,14 @@ named_dir: /var/cache/bind/
 # contain {dnet}
 live_list: /var/tmp/edges.{dnet}.live
 
-# Run commands before or after rotation. A good example of a run_after
-# is reloading your named, but in theory this could be anything!
+# Run commands before or after execution, or after a rotation/new zone
+# file being written out. A good example of a run_after_changes is
+# reloading your named, but in theory this could be anything!
 # Edgemanage doesn't wait for the process to return, so whatever this
 # screws up is all on you.
 commands:
-  run_after:
+  run_after_changes:
     - /usr/sbin/rndc reload
+  run_after:
+    - some_command
   run_before:

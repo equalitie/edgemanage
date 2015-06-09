@@ -5,7 +5,7 @@ import logging
 import datetime
 import copy
 
-from const import FETCH_HISTORY, VALID_MODES
+from const import FETCH_HISTORY, VALID_MODES, VALID_HEALTHS
 
 ASSUMED_VALS={
     # A list of timestamps of when this edge has been in rotation
@@ -18,7 +18,7 @@ ASSUMED_VALS={
     "historical_average": {},
     "state": "out",
     "mode": "available",
-    "health": "good",
+    "health": "pass",
     "state_entry_time": None,
 }
 
@@ -68,6 +68,15 @@ class EdgeState(object):
             output[val_key] = getattr(self, val_key)
         with open(self.statfile, "w") as statfile_f:
             json.dump(output, statfile_f, sort_keys=True, indent=4)
+
+    def set_health(self, health):
+        if health not in VALID_HEALTHS:
+            raise ValueError("Health must be one f %s, not %s",
+                             str(VALID_HEALTHS), health)
+        else:
+            if self.health != health:
+                self.health = health
+                self._dump()
 
     def set_state(self, state):
         ''' Set the state of the edge - in or out '''

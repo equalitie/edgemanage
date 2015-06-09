@@ -75,6 +75,9 @@ def acquire_lock(lockfile):
     return True
 
 def run_command_list(commands):
+    if not commands:
+        return None
+
     for command in commands:
         # Subprocess wants a list. This will complicate things for
         # people using complex strings but for now that's too bad.
@@ -120,7 +123,7 @@ def main(dnet, daemonise, dry_run, config, state_obj):
     verification_failues = edgemanage_object.do_edge_tests()
     state_obj.verification_failures = verification_failues
 
-    edgemanage_object.make_edges_live(state_obj)
+    any_changes = edgemanage_object.make_edges_live()
 
     if edgemanage_object.edgelist_obj.get_live_edges() != state_obj.last_live:
         # There has been a rotation as our old list doesn't equal the new
@@ -128,7 +131,7 @@ def main(dnet, daemonise, dry_run, config, state_obj):
     state_obj.last_live = edgemanage_object.edgelist_obj.get_live_edges()
 
     # Write out a flat list of live edges if the config file asks for it
-    if "live_list" in config:
+    if any_changes and "live_list" in config:
         livelist_path = config["live_list"]
         if "{dnet}" in livelist_path:
             livelist_path = livelist_path.format(dnet=dnet)
@@ -137,10 +140,13 @@ def main(dnet, daemonise, dry_run, config, state_obj):
             livelist_f.write("\n".join(
                 edgemanage_object.edgelist_obj.get_live_edges()) + "\n")
 
-    # Run any run_after commands
-    if "commands" in config and "run_after" in config["commands"]:
-        if config["commands"]["run_after"]:
-            run_command_list(config["commands"]["run_after"])
+    if "commands" in config:
+        run_after_section = config["commands"].get("run_after", [])
+        run_command_list(run_after_section)
+
+        if any_changes:
+            run_after_changes_section = config["commands"].get("run_after_changes", [])
+            run_command_list(run_after_changes_section)
 
 if __name__ == "__main__":
 
