@@ -45,6 +45,13 @@ class EdgeManage(object):
         return testobject_hash
 
     def __init__(self, dnet, config, state, dry_run=False):
+        '''
+         Upper-level edgemanage object that is used to create
+        lower-level edgemanage objects and accomplish the overall task
+        of edge testing, rotation and zone file writing.
+
+        '''
+
         self.dnet = dnet
         self.dry_run = dry_run
         self.config = config

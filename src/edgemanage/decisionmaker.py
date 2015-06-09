@@ -1,4 +1,4 @@
-from const import DECISION_SLICE_WINDOW, VALID_HEALTHS
+from const import DECISION_SLICE_WINDOW, VALID_HEALTHS, FETCH_TIMEOUT
 
 import logging
 import time
@@ -47,6 +47,11 @@ class DecisionMaker(object):
                              edge_state.last_value(), good_enough)
                 self.current_judgement[edgename] = "pass"
                 results_dict["pass"] += 1
+            elif edge_state.last_value() == FETCH_TIMEOUT:
+                results_dict["fail"] += 1
+                self.current_judgement[edgename] = "fail"
+                logging.info("FAIL: Fetch time for %s is equal to the FETCH_TIMEOUT of %d. Automatic fail",
+                             edgename, FETCH_TIMEOUT)
             elif time_slice and time_slice_avg < good_enough:
                 self.current_judgement[edgename] = "pass_window"
                 results_dict["pass_window"] += 1
