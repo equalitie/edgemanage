@@ -174,8 +174,12 @@ if __name__ == "__main__":
     setproctitle.setproctitle("edge_manage %s" % " ".join(sys.argv[1:]))
 
     state = StateFile()
-    if os.path.exists(config["statefile"]):
-        with open(config["statefile"]) as statefile_f:
+    statefile_path = config["statefile"]
+    if "{dnet}" in statefile_path:
+        statefile_path = statefile_path.format(dnet=args.dnet)
+    if os.path.exists(statefile_path):
+
+        with open(statefile_path) as statefile_f:
             state = StateFile(json.loads(statefile_f.read()))
 
     time_now = time.time()
@@ -228,5 +232,5 @@ if __name__ == "__main__":
 
     state.set_last_run()
     if not args.dryrun:
-        with open(config["statefile"], "w") as statefile_f:
+        with open(statefile_path, "w") as statefile_f:
             statefile_f.write(state.to_json())

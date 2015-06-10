@@ -56,8 +56,8 @@ retry: 3
 goodenough: 0.700
 
 # A file used to maintain state, details about last rotation and the
-# previously in-use edges
-statefile: /var/lib/edgemanage/state
+# previously in-use edges. This path can and should contain {dnet}
+statefile: /var/lib/edgemanage/{dnet}.state
 
 # The file that edgemanage should log to
 logpath: /var/log/edgemanage.log
