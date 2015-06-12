@@ -152,6 +152,8 @@ class EdgeManage(object):
 
         good_enough = self.config["goodenough"]
         required_edge_count = self.config["edge_count"]
+        if self.dnet in self.config["dnet_edge_count"]:
+            required_edge_count = self.config["dnet_edge_count"][self.dnet]
 
         threshold_stats = self.decision.check_threshold(good_enough)
         for edgename, edge_state in self.edge_states.iteritems():
@@ -263,6 +265,7 @@ class EdgeManage(object):
         # We've got our edges, one way or another - let's set their states
         # Note in the statefile that this edge has been put into rotation
         for edge in self.edge_states:
+
             if self.edgelist_obj.is_live(edge):
                 # Note in the statefile that this edge has been put into rotation
                 logging.debug("Setting edge %s to state in", edge)

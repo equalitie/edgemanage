@@ -70,8 +70,13 @@ lockfile: /var/lock/edgemanage.lock
 # MX, CNAME and non-@ A records into these files.
 zonetemplate_dir: /etc/edgemanage/zones
 
-# Number of edges to keep as the @ record in DNS
+# Number of edges to keep as the @ record in DNS - if not specific in
+# dnet_edge_count, this value will be used.
 edge_count: 4
+
+# Number of edges to keep as @ per-dnet
+dnet_edge_count:
+  my_dnet: 6
 
 # Directory to write completed, full DNS zone files to. If you're
 # using Edgemanage in a live capacity, this should be the directory
