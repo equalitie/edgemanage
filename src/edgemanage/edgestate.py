@@ -75,6 +75,7 @@ class EdgeState(object):
                              str(VALID_HEALTHS), health)
         else:
             if self.health != health:
+                logging.debug("Setting health for edge %s to %s", self.edgename, health)
                 self.health = health
                 self._dump()
 
@@ -122,7 +123,7 @@ class EdgeState(object):
 
     def last_value(self):
         ''' Get the most recent value stored '''
-        return self.fetch_times[max(self.fetch_times)]
+        return self.fetch_times[max(self.fetch_times.keys())]
 
     def add_rotation(self):
         self.rotation_history.append(time.time())
