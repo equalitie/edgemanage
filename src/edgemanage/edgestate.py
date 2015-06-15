@@ -141,8 +141,8 @@ class EdgeState(object):
         # prune our values if there's too many of them
         if len(self.fetch_times) > FETCH_HISTORY:
             min_value = sorted(self.fetch_times.keys())[0]
-            logging.debug("Rotating out item with timestamp %f due to fetch cache being over %d items",
-                          min_value, FETCH_HISTORY)
+            logging.debug("Rotating out item with timestamp %f and value %f due to fetch cache being over %d items",
+                          min_value, self.fetch_times[min_value], FETCH_HISTORY)
             del(self.fetch_times[min_value])
 
         the_time_datetime = datetime.datetime.utcfromtimestamp(the_time)
