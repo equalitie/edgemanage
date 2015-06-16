@@ -20,17 +20,24 @@ import os
 
 import yaml
 
-def sep_output(output_tuple, verbose, quiet, output_char=" "):
+def sep_output(output_tuple, verbose, quiet, header_printed, output_char=" "):
     chosen_fields = []
+    header_fields = []
     if verbose:
         #mode state health edgename duration
         chosen_fields = output_tuple
+        header_fields = ["mode", "state", "health", "edgename", "duration"]
     elif quiet:
+        header_fields = ["edgename"]
         chosen_fields = (output_tuple[3],)
     else:
+        header_fields = ["edgename", "duration"]
         chosen_fields = (output_tuple[3], output_tuple[4])
 
+    if header_printed is False:
+        print output_char.join(header_fields)
     print output_char.join(chosen_fields)
+    return True
 
 def json_output(output_tuple, verbose, quiet):
     # This is really dumb why just recreate a diction ah who cares
@@ -78,11 +85,14 @@ def main(args):
                                 edge_state.edgename,
                                 str(state_time)))
 
+    header_printed = None
+    if args.header:
+        header_printed = False
     for entry in output_data:
         if args.format == "flat":
-            sep_output(entry, args.verbose, args.quiet, " ")
+            header_printed = sep_output(entry, args.verbose, args.quiet, header_printed, " ")
         elif args.format == "csv":
-            sep_output(entry, args.verbose, args.quiet, ",")
+            header_printed = sep_output(entry, args.verbose, args.quiet, header_printed, ",")
         else:
             json_output(entry, args.verbose, args.quiet)
 
@@ -108,6 +118,8 @@ if __name__ == "__main__":
                         choices=["flat", "csv", "json"])
     parser.add_argument("--quiet", "-q", dest="quiet", action="store_true",
                         help="List hostnames only, without details or state duration", default=False)
+    parser.add_argument("--header", dest="header", action="store_true",
+                        help="Print a header explaining the column outputs")
     parser.add_argument("--verbose", "-v", dest="verbose", action="store_true",
                         help=("Include full mode, state and health details for "
                               "each matching host"), default=False)
