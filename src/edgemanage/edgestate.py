@@ -136,7 +136,9 @@ class EdgeState(object):
         '''
 
         the_time = time.time()
-        self.fetch_times[the_time] = new_value
+        #HACK Cast to string here because for stupid reasons the data
+        #store's timestamps will also be strings.
+        self.fetch_times[the_time] = str(new_value)
 
         # prune our values if there's too many of them
         if len(self.fetch_times) > FETCH_HISTORY:
