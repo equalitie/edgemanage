@@ -136,9 +136,10 @@ class EdgeState(object):
         '''
 
         the_time = time.time()
-        #HACK Cast to string here because for stupid reasons the data
-        #store's timestamps will also be strings.
-        self.fetch_times[the_time] = str(new_value)
+        # HACK: for legacy reasons, we need to cast to string
+        # here. It's stupid. Need to fix this in future versions with
+        # migration path for old state files.
+        self.fetch_times[str(the_time)] = new_value
 
         # prune our values if there's too many of them
         if len(self.fetch_times) > FETCH_HISTORY:
