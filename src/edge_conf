@@ -42,8 +42,6 @@ if __name__ == "__main__":
                         default=CONFIG_PATH)
     parser.add_argument("--dnet", "-A", dest="dnet", action="store",
                         help="Specify DNET (mandatory)")
-    parser.add_argument("--edge", "-E", dest="edge", action="store",
-                        help="Specify edge")
     parser.add_argument("--mode", "-m", dest="mode", action="store", default=None,
                         help="Set mode", required=True,
                         choices=VALID_MODES)
