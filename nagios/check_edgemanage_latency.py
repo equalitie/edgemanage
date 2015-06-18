@@ -36,7 +36,7 @@ class CheckLatency(object):
                 if float(latest_fetch_time) < (self.now - TIME_WINDOW):
                     # Skip fetches that are too old
                     print "Skipping %s as fetch time was %f ago" % (edge_name,
-                                                                    self.now - latest_fetch_time)
+                                                                    self.now - float(latest_fetch_time))
                     continue
                 self.latency_map[edge_name] = health_json["fetch_times"][latest_fetch_time]
 
@@ -59,10 +59,11 @@ class CheckLatency(object):
             nagios_status = 1
             nagios_message = "Slowest active edge %s responded in %f" % (edge_name, worst_latency)
 
-        return (nagios_status, "%s %s %s | time=%f edge=%s" % (OUTPUT_LABEL,
-                                                               STATUS_MAP[nagios_status],
-                                                               nagios_message, worst_latency,
-                                                               edge_name))
+        if edge_name:
+            return (nagios_status, "%s %s %s | time=%f edge=%s" % (OUTPUT_LABEL,
+                                                                   STATUS_MAP[nagios_status],
+                                                                   nagios_message, worst_latency,
+                                                                   edge_name))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Nagios check for Edgemanage fetch latency.')
