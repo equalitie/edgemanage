@@ -35,8 +35,8 @@ class CheckLatency(object):
                 latest_fetch_time = sorted(health_json["fetch_times"].keys())[-1]
                 if float(latest_fetch_time) < (self.now - TIME_WINDOW):
                     # Skip fetches that are too old
-                    print "Skipping %s as fetch time was %f ago" % (edge_name,
-                                                                    self.now - float(latest_fetch_time))
+                    sys.stderr.write( "Skipping %s as fetch time was %f ago\n" % (edge_name,
+                                                                    self.now - float(latest_fetch_time)))
                     continue
                 self.latency_map[edge_name] = health_json["fetch_times"][latest_fetch_time]
 
@@ -64,6 +64,8 @@ class CheckLatency(object):
                                                                    STATUS_MAP[nagios_status],
                                                                    nagios_message, worst_latency,
                                                                    edge_name))
+        else:
+            return (3, "no edgemanage data for time window")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Nagios check for Edgemanage fetch latency.')
@@ -76,6 +78,10 @@ if __name__ == "__main__":
                         help="Latency to trigger CRIT level at",
                         default=DEFAULT_CRIT, type=int)
     args = parser.parse_args()
+
+    if not os.path.isdir(args.edgehealth[0]):
+        raise Exception("Argument must be a directory full of edge health files")
+
     c = CheckLatency(args.edgehealth[0])
     status, message = c.check_rotation(args.warn, args.crit)
     print message
