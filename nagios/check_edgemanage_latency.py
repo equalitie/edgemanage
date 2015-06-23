@@ -7,6 +7,10 @@ import argparse
 import glob
 import os.path
 
+import yaml
+
+from edgemanage.const import CONFIG_PATH
+
 DEFAULT_CRIT=2.0
 DEFAULT_WARN=4.0
 # Window to check for a fetch, in seconds
@@ -73,12 +77,13 @@ class CheckLatency(object):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Nagios check for Edgemanage fetch latency.')
-    parser.add_argument("edgehealth", nargs=1, action="store",
-                        help="Path to the edgemanage edge health store")
+    parser.add_argument("--config", "-c", dest="config_path", action="store",
+                        help="Path to configuration file (defaults to %s)" % CONFIG_PATH,
+                        default=CONFIG_PATH)
     parser.add_argument("--warn", "-w", action="store", dest="warn",
                         help="Latency to trigger WARN level at",
                         default=DEFAULT_WARN, type=int)
-    parser.add_argument("--critical", "-c", action="store", dest="crit",
+    parser.add_argument("--critical", "-C", action="store", dest="crit",
                         help="Latency to trigger CRIT level at",
                         default=DEFAULT_CRIT, type=int)
     parser.add_argument("--all", "-a", action="store_true", dest="all",
@@ -86,10 +91,13 @@ if __name__ == "__main__":
                         default=False)
     args = parser.parse_args()
 
-    if not os.path.isdir(args.edgehealth[0]):
+    with open(args.config_path) as config_f:
+        config = yaml.safe_load(config_f.read())
+
+    if not os.path.isdir(config["healthdata_store"]):
         raise Exception("Argument must be a directory full of edge health files")
 
-    c = CheckLatency(args.edgehealth[0], args.all)
+    c = CheckLatency(config["healthdata_store"], args.all)
     status, message = c.check_rotation(args.warn, args.crit)
     print message
     sys.exit(status)
