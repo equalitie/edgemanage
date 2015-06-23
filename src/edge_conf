@@ -41,7 +41,7 @@ if __name__ == "__main__":
                         help="Path to configuration file (defaults to %s)" % CONFIG_PATH,
                         default=CONFIG_PATH)
     parser.add_argument("--dnet", "-A", dest="dnet", action="store",
-                        help="Specify DNET (mandatory)")
+                        help="Specify DNET (mandatory)", required=True)
     parser.add_argument("--mode", "-m", dest="mode", action="store", default=None,
                         help="Set mode", required=True,
                         choices=VALID_MODES)
