@@ -20,7 +20,7 @@ STATUS_MAP = {0: "OK",
 
 class CheckLatency(object):
 
-    def __init__(self, edgehealth_dir):
+    def __init__(self, edgehealth_dir, check_all=False):
         self.latency_map = {}
         self.now = time.time()
 
@@ -30,6 +30,10 @@ class CheckLatency(object):
                 health_json = json.loads(health_f.read())
                 if "fetch_times" not in health_json or not health_json["fetch_times"]:
                     # Skip uninitialised edges, or edges that have no data
+                    continue
+
+                if not check_all and health_json["state"] != "in":
+                    # if we're not explicitly checking all, then only check hosts that are in.
                     continue
 
                 latest_fetch_time = sorted(health_json["fetch_times"].keys())[-1]
@@ -77,12 +81,15 @@ if __name__ == "__main__":
     parser.add_argument("--critical", "-c", action="store", dest="crit",
                         help="Latency to trigger CRIT level at",
                         default=DEFAULT_CRIT, type=int)
+    parser.add_argument("--all", "-a", action="store_true", dest="all",
+                        help="Check latency across all hosts, not just the current \"in\" hosts",
+                        default=False)
     args = parser.parse_args()
 
     if not os.path.isdir(args.edgehealth[0]):
         raise Exception("Argument must be a directory full of edge health files")
 
-    c = CheckLatency(args.edgehealth[0])
+    c = CheckLatency(args.edgehealth[0], args.all)
     status, message = c.check_rotation(args.warn, args.crit)
     print message
     sys.exit(status)
