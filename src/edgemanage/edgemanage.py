@@ -155,33 +155,50 @@ class EdgeManage(object):
         if self.dnet in self.config["dnet_edge_count"]:
             required_edge_count = self.config["dnet_edge_count"][self.dnet]
 
-        threshold_stats = self.decision.check_threshold(good_enough)
-        for edgename, edge_state in self.edge_states.iteritems():
-            if edge_state.mode == "force":
-                if self.decision.get_judgement(edgename) == "pass":
-                    logging.debug(
-                        "Making host %s live because it is in mode force and it is in state pass",
-                        edgename)
-                    self.edgelist_obj.add_edge(edgename, state="pass", live=True)
-            elif edge_state.mode == "blindforce":
-                logging.debug("Making host %s live bceause it is in mode blindforce.",
-                              edgename)
-                self.edgelist_obj.add_edge(edgename, state="pass", live=True)
-
-        logging.debug("Stats of threshold check are %s", str(threshold_stats))
-
         # Has the edgelist changed since last iteration?
         edgelist_changed = None
         # Have ANY changes happened since last iteration? Including zone
         # updates.
         any_changes = False
 
-        # Do we have a previous edge list?
+        threshold_stats = self.decision.check_threshold(good_enough)
+
+        # Get the list of previously healthy edges
         still_healthy_from_last_run = self.check_last_live()
+
+        for edgename, edge_state in self.edge_states.iteritems():
+            if edge_state.mode == "force":
+                if self.decision.get_judgement(edgename) == "pass":
+                    logging.debug(
+                        "Making host %s live because it is in mode force and it is in state pass",
+                        edgename)
+
+                    # Don't set edgelist_changed to True if we're
+                    # already heathy and live
+                    if not edgename in still_healthy_from_last_run:
+                        self.edgelist_obj.add_edge(edgename, state="pass", live=True)
+                        edgelist_changed = True
+
+            elif edge_state.mode == "blindforce":
+                logging.debug("Making host %s live because it is in mode blindforce.",
+                              edgename)
+                self.edgelist_obj.add_edge(edgename, state="pass", live=True)
+
+                # Don't update the edgelist if we're still in the last
+                # live list. We don't care if we're healthy.
+                if edgename not in self.state_obj.last_live:
+                    edgelist_changed = True
+
+        logging.debug("Stats of threshold check are %s", str(threshold_stats))
+
+        # If everything is still healthy from the last run then use those.
         if still_healthy_from_last_run:
-            edgelist_changed = False
             logging.info("Got list of previously in use edges that are in a passing state: %s",
                          still_healthy_from_last_run)
+            if edgelist_changed == None:
+                # This check is to ensure that a previously-passing
+                # list doesn't ignore forced or blindforced edges.
+                edgelist_changed = False
 
         for still_healthy in still_healthy_from_last_run:
             if len(self.edgelist_obj) < required_edge_count:
@@ -281,4 +298,4 @@ class EdgeManage(object):
 
         self.state_obj.zone_mtimes = self.current_mtimes
 
-        return any_changes
+        return any_changes or edgelist_changed
