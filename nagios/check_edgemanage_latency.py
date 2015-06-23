@@ -4,17 +4,16 @@ import sys
 import time
 import json
 import argparse
-import glob
 import os.path
 
 import yaml
 
 from edgemanage.const import CONFIG_PATH
 
-DEFAULT_CRIT=2.0
-DEFAULT_WARN=4.0
+DEFAULT_CRIT = 2.0
+DEFAULT_WARN = 4.0
 # Window to check for a fetch, in seconds
-TIME_WINDOW=60
+TIME_WINDOW = 60
 
 OUTPUT_LABEL="ACTIVE_EDGE_LATENCY"
 STATUS_MAP = {0: "OK",
@@ -24,13 +23,12 @@ STATUS_MAP = {0: "OK",
 
 class CheckLatency(object):
 
-    def __init__(self, edgehealth_dir, check_all=False):
+    def __init__(self, edgehealth_dir, edge_list, check_all=False, verbose=False):
         self.latency_map = {}
         self.now = time.time()
 
-        for health_file in glob.glob("%s/*edgestore" % edgehealth_dir):
-            with open(health_file) as health_f:
-                edge_name = os.path.basename(health_file).partition(".edgestore")[0]
+        for edge_name in edge_list:
+            with open(os.path.join(edgehealth_dir, "%s.edgestore" % edge_name)) as health_f:
                 health_json = json.loads(health_f.read())
                 if "fetch_times" not in health_json or not health_json["fetch_times"]:
                     # Skip uninitialised edges, or edges that have no data
@@ -43,8 +41,11 @@ class CheckLatency(object):
                 latest_fetch_time = sorted(health_json["fetch_times"].keys())[-1]
                 if float(latest_fetch_time) < (self.now - TIME_WINDOW):
                     # Skip fetches that are too old
-                    sys.stderr.write( "Skipping %s as fetch time was %f ago\n" % (edge_name,
-                                                                    self.now - float(latest_fetch_time)))
+                    if verbose:
+                        sys.stderr.write("Skipping %s as fetch time was %f ago\n" % (
+                            edge_name,
+                            self.now - float(latest_fetch_time))
+                        )
                     continue
                 self.latency_map[edge_name] = health_json["fetch_times"][latest_fetch_time]
 
@@ -89,6 +90,10 @@ if __name__ == "__main__":
     parser.add_argument("--all", "-a", action="store_true", dest="all",
                         help="Check latency across all hosts, not just the current \"in\" hosts",
                         default=False)
+    parser.add_argument("--verbose", "-v", dest="verbose", action="store_true",
+                        help="Verbose output", default=False)
+    parser.add_argument("--dnet", "-A", dest="dnet", action="store",
+                        help="Specify DNET (mandatory)", required=True)
     args = parser.parse_args()
 
     with open(args.config_path) as config_f:
@@ -97,7 +102,10 @@ if __name__ == "__main__":
     if not os.path.isdir(config["healthdata_store"]):
         raise Exception("Argument must be a directory full of edge health files")
 
-    c = CheckLatency(config["healthdata_store"], args.all)
+    with open(os.path.join(config["edgelist_dir"], args.dnet)) as edge_f:
+        edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
+
+    c = CheckLatency(config["healthdata_store"], edge_list, args.all, verbose=args.verbose)
     status, message = c.check_rotation(args.warn, args.crit)
     print message
     sys.exit(status)
