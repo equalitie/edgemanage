@@ -12,8 +12,6 @@ from edgemanage.const import CONFIG_PATH
 
 DEFAULT_CRIT = 2.0
 DEFAULT_WARN = 4.0
-# Window to check for a fetch, in seconds
-TIME_WINDOW = 60
 
 OUTPUT_LABEL="ACTIVE_EDGE_LATENCY"
 STATUS_MAP = {0: "OK",
@@ -39,21 +37,12 @@ class CheckLatency(object):
                     continue
 
                 latest_fetch_time = sorted(health_json["fetch_times"].keys())[-1]
-                if float(latest_fetch_time) < (self.now - TIME_WINDOW):
-                    # Skip fetches that are too old
-                    if verbose:
-                        sys.stderr.write("Skipping %s as fetch time was %f ago\n" % (
-                            edge_name,
-                            self.now - float(latest_fetch_time))
-                        )
-                    continue
                 self.latency_map[edge_name] = health_json["fetch_times"][latest_fetch_time]
 
     def check_rotation(self, warn, crit):
         worst_latency = None
         nagios_status = 0
         edge_name = None
-        nagios_message = "No edges over threshold latencies"
         for edge_name, fetch_value in self.latency_map.iteritems():
             if not worst_latency or fetch_value > worst_latency:
                 worst_latency = fetch_value
@@ -63,13 +52,12 @@ class CheckLatency(object):
             nagios_status = 3
         elif worst_latency >= crit:
             nagios_status = 2
-            nagios_message = "Slowest active edge %s responded in %f" % (edge_name, worst_latency)
         elif worst_latency >= warn:
             nagios_status = 1
-            nagios_message = "Slowest active edge %s responded in %f" % (edge_name, worst_latency)
+        nagios_message = "Slowest active edge responded in %f" % worst_latency
 
         if edge_name:
-            return (nagios_status, "%s %s %s | time=%f edge=%s" % (OUTPUT_LABEL,
+            return (nagios_status, "%s %s %s | slowestactive=%f edge=%s" % (OUTPUT_LABEL,
                                                                    STATUS_MAP[nagios_status],
                                                                    nagios_message, worst_latency,
                                                                    edge_name))
@@ -83,10 +71,10 @@ if __name__ == "__main__":
                         default=CONFIG_PATH)
     parser.add_argument("--warn", "-w", action="store", dest="warn",
                         help="Latency to trigger WARN level at",
-                        default=DEFAULT_WARN, type=int)
+                        default=DEFAULT_WARN, type=float)
     parser.add_argument("--critical", "-C", action="store", dest="crit",
                         help="Latency to trigger CRIT level at",
-                        default=DEFAULT_CRIT, type=int)
+                        default=DEFAULT_CRIT, type=float)
     parser.add_argument("--all", "-a", action="store_true", dest="all",
                         help="Check latency across all hosts, not just the current \"in\" hosts",
                         default=False)
