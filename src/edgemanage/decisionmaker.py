@@ -50,7 +50,8 @@ class DecisionMaker(object):
             elif edge_state.last_value() == FETCH_TIMEOUT:
                 results_dict["fail"] += 1
                 self.current_judgement[edgename] = "fail"
-                logging.info("FAIL: Fetch time for %s is equal to the FETCH_TIMEOUT of %d. Automatic fail",
+                logging.info(("FAIL: Fetch time for %s is equal to the FETCH_TIMEOUT of %d. "
+                              "Automatic fail"),
                              edgename, FETCH_TIMEOUT)
             elif time_slice and time_slice_avg < good_enough:
                 self.current_judgement[edgename] = "pass_window"
@@ -64,6 +65,7 @@ class DecisionMaker(object):
             else:
                 results_dict["fail"] += 1
                 self.current_judgement[edgename] = "fail"
-                logging.info("FAIL: No check for %s has passed - last fetch time was %f", edgename, edge_state.last_value())
+                logging.info("FAIL: No check for %s has passed - last fetch time was %f",
+                             edgename, edge_state.last_value())
 
         return results_dict

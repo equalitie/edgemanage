@@ -146,7 +146,7 @@ class EdgeManage(object):
 
         return list(set(still_healthy))
 
-    def make_edges_live(self):
+    def make_edges_live(self, force_update):
 
         # Returns true if any changes were made.
 
@@ -243,11 +243,12 @@ class EdgeManage(object):
             # Iterate over every *zone file in the zonetemplate dir and write out files.
             for zone_name in self.current_mtimes:
 
+                # Unless an update is forced:
                 # * Skip files that haven't been changed
                 # * Write out zone files we haven't seen before
                 # * don't write out updated zone files when we aren't changing edge list
                 old_mtime = self.state_obj.zone_mtimes.get(zone_name)
-                if not edgelist_changed and old_mtime and old_mtime == self.current_mtimes[zone_name]:
+                if not force_update and not edgelist_changed and old_mtime and old_mtime == self.current_mtimes[zone_name]:
                     logging.info("Not writing zonefile for %s because there are no changes pending",
                                  zone_name)
                     continue
