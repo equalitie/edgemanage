@@ -102,7 +102,7 @@ def run_command_list(commands):
 
 
 
-def main(dnet, daemonise, dry_run, config, state_obj):
+def main(dnet, daemonise, dry_run, config, state_obj, force_update=False):
 
     edgemanage_object = EdgeManage(dnet, config, state, dry_run)
 
@@ -123,7 +123,7 @@ def main(dnet, daemonise, dry_run, config, state_obj):
     verification_failues = edgemanage_object.do_edge_tests()
     state_obj.verification_failures = verification_failues
 
-    any_changes = edgemanage_object.make_edges_live()
+    any_changes = edgemanage_object.make_edges_live(force_update)
 
     if edgemanage_object.edgelist_obj.get_live_edges() != state_obj.last_live:
         # There has been a rotation as our old list doesn't equal the new
@@ -160,7 +160,9 @@ if __name__ == "__main__":
     parser.add_argument("--dry-run", "-n", dest="dryrun", action="store_true",
                         help="Dry run - don't generate any files", default=False)
     parser.add_argument("--force", dest="force", action="store_true",
-                        help="Force execution", default=False)
+                        help="Force execution when not using daemon mode", default=False)
+    parser.add_argument("--force-update", dest="force_update", action="store_true",
+                        help="Force update of zone files regardless of need for an update", default=False)
     parser.add_argument("--daemonise", dest="daemonise", action="store_true",
                         help="Run as a daemon, executing as often as is defined in config",
                         default=False)
@@ -225,10 +227,10 @@ if __name__ == "__main__":
                 daemon_setup()
 
             while True:
-                main(args.dnet, args.daemonise, args.dryrun, config, state)
+                main(args.dnet, args.daemonise, args.dryrun, config, state, args.force_update)
                 time.sleep(config["run_frequency"])
         else:
-            main(args.dnet, args.daemonise, args.dryrun, config, state)
+            main(args.dnet, args.daemonise, args.dryrun, config, state, args.force_update)
 
     state.set_last_run()
     if not args.dryrun:
