@@ -63,6 +63,7 @@ class EdgeState(object):
 
         if self.nowrite:
             logging.debug("Not writing %s because nowrite=True", self.statfile)
+            return
 
         for val_key, val_type in ASSUMED_VALS.iteritems():
             output[val_key] = getattr(self, val_key)
@@ -129,13 +130,17 @@ class EdgeState(object):
         self.rotation_history.append(time.time())
         self._dump()
 
-    def add_value(self, new_value):
+    def add_value(self, new_value, timestamp=None):
         '''Add a new value to the fetch times store and check if we
         need to make a historical average
 
         '''
 
-        the_time = time.time()
+        if timestamp:
+            the_time = timestamp
+        else:
+            the_time = time.time()
+
         # HACK: for legacy reasons, we need to cast to string
         # here. It's stupid. Need to fix this in future versions with
         # migration path for old state files.
