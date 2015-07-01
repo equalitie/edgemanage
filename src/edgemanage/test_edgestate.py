@@ -2,6 +2,7 @@
 
 import unittest
 import tempfile
+import time
 
 import edgestate
 
@@ -32,8 +33,9 @@ class EdgeStateTest(unittest.TestCase):
     def testStoreRotation(self):
         a = self._make_store()
 
-        for i in range(5):
+        for i in range(TEST_FETCH_HISTORY+1):
             a.add_value(2)
+            time.sleep(0.01)
 
         self.assertEqual(len(a), TEST_FETCH_HISTORY)
 
