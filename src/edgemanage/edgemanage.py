@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-from . import EdgeTest, EdgeState, DecisionMaker, EdgeList, VerifyFailed
+from edgetest import EdgeTest, VerifyFailed
+from edgestate import EdgeState
+from decisionmaker import DecisionMaker
+from edgelist import EdgeList
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import glob
