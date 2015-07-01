@@ -14,9 +14,14 @@ class EdgeStateTest(unittest.TestCase):
 
     # TODO load test JSON file to ensure object creation
 
-    def testStoreAverage(self):
+    @staticmethod
+    def _make_store():
         store_dir = tempfile.mkdtemp()
         a = edgestate.EdgeState(TEST_EDGE, store_dir)
+        return a
+
+    def testStoreAverage(self):
+        a = self._make_store()
 
         for i in range(4):
             a.add_value(2)
@@ -25,8 +30,7 @@ class EdgeStateTest(unittest.TestCase):
         self.assertEqual(average, 2)
 
     def testStoreRotation(self):
-        store_dir = tempfile.mkdtemp()
-        a = edgestate.EdgeState(TEST_EDGE, store_dir)
+        a = self._make_store()
 
         for i in range(5):
             a.add_value(2)
