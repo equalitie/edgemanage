@@ -26,7 +26,7 @@ def sep_output(output_tuple, verbose, quiet, header_printed, output_char=" "):
     if verbose:
         #mode state health edgename duration
         chosen_fields = output_tuple
-        header_fields = ["mode", "state", "health", "edgename", "duration"]
+        header_fields = ["mode", "state", "health", "edgename", "duration", "comment"]
     elif quiet:
         header_fields = ["edgename"]
         chosen_fields = (output_tuple[3],)
@@ -83,14 +83,15 @@ def main(args):
             output_data.append((edge_state.mode, edge_state.state,
                                 edge_state.health,
                                 edge_state.edgename,
-                                str(state_time)))
+                                str(state_time),
+                                edge_state.comment))
 
     header_printed = None
     if args.header:
         header_printed = False
     for entry in output_data:
         if args.format == "flat":
-            header_printed = sep_output(entry, args.verbose, args.quiet, header_printed, " ")
+            header_printed = sep_output(entry, args.verbose, args.quiet, header_printed, "\t")
         elif args.format == "csv":
             header_printed = sep_output(entry, args.verbose, args.quiet, header_printed, ",")
         else:
