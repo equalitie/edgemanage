@@ -15,11 +15,15 @@ from edgemanage import EdgeState
 from edgemanage.const import VALID_MODES, CONFIG_PATH
 
 import argparse
+import getpass
+import logging
+import logging.handlers
 import os
+import sys
 
 import yaml
 
-def main(dnet, edgename, config, mode):
+def main(dnet, edgename, config, mode, comment=None, no_syslog=False):
 
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
@@ -32,6 +36,25 @@ def main(dnet, edgename, config, mode):
 
     edge_state = EdgeState(edgename, config["healthdata_store"], nowrite=False)
     edge_state.set_mode(mode)
+
+    if comment:
+        run_user = getpass.getuser()
+        if os.getenv("SUDO_USER"):
+            run_user = os.getenv("SUDO_USER")
+        comment = "[%s] %s" % (run_user, comment)
+
+        edge_state.set_comment(comment)
+
+        if not no_syslog:
+            handler = logging.handlers.SysLogHandler(
+                facility=logging.handlers.SysLogHandler.LOG_DAEMON)
+            logger = logging.getLogger('edge_conf')
+            logger.setLevel(logging.INFO)
+            logger.addHandler(handler)
+            logger.info("Edge %s changed mode to %s with comment %s", edgename, mode, comment)
+    elif mode == "available":
+        edge_state.unset_comment()
+
     print "Set mode for %s to %s" % (edgename, mode)
 
 if __name__ == "__main__":
@@ -42,6 +65,11 @@ if __name__ == "__main__":
                         default=CONFIG_PATH)
     parser.add_argument("--dnet", "-A", dest="dnet", action="store",
                         help="Specify DNET (mandatory)", required=True)
+    parser.add_argument("--no-syslog", dest="nosyslog", action="store_true",
+                        help="Don't log comments to syslog", default=False)
+    parser.add_argument("--comment", "-C", dest="comment", action="store",
+                        help=("Comment about your change (required for all "
+                              "modes other than available)"))
     parser.add_argument("--mode", "-m", dest="mode", action="store", default=None,
                         help="Set mode", required=True,
                         choices=VALID_MODES)
@@ -52,7 +80,13 @@ if __name__ == "__main__":
     if not args.dnet and not args.edge:
         raise Exception("Arguments must specify either a DNET or a specific edge")
 
+    if args.mode != "available" and not args.comment:
+        sys.stderr.write(("Comment required for mode to "
+                          "be changed to anything but available.\n"))
+        sys.exit(1)
+
+
     with open(args.config_path) as config_f:
         config = yaml.safe_load(config_f.read())
 
-    main(args.dnet, args.edge[0], config, args.mode)
+    main(args.dnet, args.edge[0], config, args.mode, args.comment, args.nosyslog)

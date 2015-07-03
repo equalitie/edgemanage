@@ -20,6 +20,8 @@ ASSUMED_VALS={
     "mode": "available",
     "health": "pass",
     "state_entry_time": None,
+    # A comment created by edge_conf when changing state
+    "comment": "",
 }
 
 class EdgeState(object):
@@ -69,6 +71,14 @@ class EdgeState(object):
             output[val_key] = getattr(self, val_key)
         with open(self.statfile, "w") as statfile_f:
             json.dump(output, statfile_f, sort_keys=True, indent=4)
+
+    def set_comment(self, comment):
+        self.comment = comment
+        self._dump()
+
+    def unset_comment(self):
+        self.comment = ""
+        self._dump()
 
     def set_health(self, health):
         if health not in VALID_HEALTHS:
