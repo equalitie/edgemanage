@@ -8,9 +8,9 @@
 
 """
 
-__author__="nosmo@nosmo.me"
+__author__ = "nosmo@nosmo.me"
 
-from edgemanage import EdgeState
+from edgemanage import EdgeState, util
 from edgemanage.const import VALID_MODES, CONFIG_PATH, VALID_HEALTHS
 
 import argparse
@@ -56,9 +56,9 @@ def json_output(output_tuple, verbose, quiet):
 def main(args):
 
     with open(os.path.join(config["edgelist_dir"], args.dnet)) as edge_f:
-        edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
+        edge_list = [ i.strip() for i in edge_f.read().split("\n") \
+                      if i.strip() and not i.startswith("#") ]
 
-    interested_edges = []
     output_data = []
 
     now = time.time()
