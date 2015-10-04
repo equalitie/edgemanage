@@ -11,7 +11,7 @@ Tool for manipulating the state of edges.
 
 __author__="nosmo@nosmo.me"
 
-from edgemanage import EdgeState
+from edgemanage import EdgeState, util
 from edgemanage.const import VALID_MODES, CONFIG_PATH
 
 import argparse
@@ -89,4 +89,10 @@ if __name__ == "__main__":
     with open(args.config_path) as config_f:
         config = yaml.safe_load(config_f.read())
 
+    lock_f = open(config["lockfile"], "w")
+    if not util.acquire_lock(lock_f):
+        sys.stderr.write("Couldn't acquire lockfile - not executing.\n")
+        sys.exit(2)
+
     main(args.dnet, args.edge[0], config, args.mode, args.comment, args.nosyslog)
+    lock_f.close()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from edgemanage import const, EdgeManage, StateFile
+from edgemanage import const, EdgeManage, StateFile, util
 
 import argparse
 import atexit
@@ -17,7 +17,7 @@ import yaml
 
 import setproctitle
 
-__author__="nosmo@nosmo.me"
+__author__ = "nosmo@nosmo.me"
 
 def daemon_setup():
     # First fork
@@ -60,19 +60,6 @@ def daemon_setup():
     #atexit.register(self.delpid)
     #pid = str(os.getpid())
     #file(self.pidfile,'w+').write("%s\n" % pid)
-
-def acquire_lock(lockfile):
-    # Attempt to lock a file so that we don't have overlapping runs
-    # Might be deperecated in future in favour of the time checking
-    # used at the start of main()
-    fp = open(lockfile, 'w')
-
-    try:
-        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except IOError:
-        return False
-
-    return True
 
 def run_command_list(commands):
     if not commands:
@@ -213,7 +200,9 @@ if __name__ == "__main__":
     logging.debug("Command line options are %s", str(args))
     logging.debug("Full configuration is:\n %s", pprint.pformat(config))
 
-    if not acquire_lock(config["lockfile"]):
+    lock_f = open(config["lockfile"], "w")
+
+    if not util.acquire_lock(lock_f):
         raise Exception("Couldn't acquire lock file - is Edgemanage running elsewhere?")
     else:
         if args.daemonise:
@@ -236,3 +225,4 @@ if __name__ == "__main__":
     if not args.dryrun:
         with open(statefile_path, "w") as statefile_f:
             statefile_f.write(state.to_json())
+    lock_f.close()
