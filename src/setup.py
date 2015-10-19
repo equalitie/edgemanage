@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name = "edgemanage",
-    version = "2.0.3",
+    version = "2.0.4",
     author = "Hugh Nowlan",
     author_email = "nosmo@nosmo.me",
     description = "HTTP availability management tool",
