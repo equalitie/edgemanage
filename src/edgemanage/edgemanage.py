@@ -4,9 +4,11 @@ from edgetest import EdgeTest, VerifyFailed
 from edgestate import EdgeState
 from decisionmaker import DecisionMaker
 from edgelist import EdgeList
+from const import FETCH_TIMEOUT
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import glob
+import traceback
 import hashlib
 import logging
 import os
@@ -16,12 +18,22 @@ def future_fetch(edgetest, testobject_host, testobject_path,
                  testobject_proto, testobject_verify):
     """Helper function to give us a return value that plays nice with as_completed"""
 
+    fetch_status = None
     try:
         fetch_result = edgetest.fetch(testobject_host, testobject_path,
                                       testobject_proto, testobject_verify)
-    except VerifyFailed:
-        fetch_result = False
-    return {edgetest.edgename: fetch_result}
+    except VerifyFailed as exc:
+        # Ensure that we don't use hosts where verification has failed
+        fetch_result = FETCH_TIMEOUT
+        fetch_status = "verify_failed"
+    except FetchFailed as exc:
+        # Ensure that we don't use hosts where fetching the object has
+        # caused a HTTP error
+        fetch_result = FETCH_TIMEOUT
+        fetch_status = "fetch_failed"
+    except Exception as exc:
+        logging.error("Uncaught exception in fetch! %s", traceback.format_exc())
+    return {edgetest.edgename: (fetch_result, fetch_status)}
 
 
 class EdgeManage(object):
@@ -103,13 +115,14 @@ class EdgeManage(object):
                 # Do some shit here
                 raise
             edge, value = result.items()[0]
+            fetch_result, fetch_status = value
 
-            if value == False:
+            if fetch_status == "verify_failed":
                 verification_failues.append(edge)
 
-            self.edge_states[edge].add_value(value)
+            self.edge_states[edge].add_value(fetch_result)
             logging.info("Fetch time for %s: %f avg: %f",
-                         edge, value,
+                         edge, fetch_result,
                          self.edge_states[edge].current_average())
 
             # Skip edges that we have forced out of commission
