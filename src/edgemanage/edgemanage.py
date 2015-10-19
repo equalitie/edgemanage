@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from edgetest import EdgeTest, VerifyFailed
+from edgetest import EdgeTest, VerifyFailed, FetchFailed
 from edgestate import EdgeState
 from decisionmaker import DecisionMaker
 from edgelist import EdgeList
