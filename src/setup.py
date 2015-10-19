@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name = "edgemanage",
-    version = "2.0.1",
+    version = "2.0.2",
     author = "Hugh Nowlan",
     author_email = "nosmo@nosmo.me",
     description = "HTTP availability management tool",
@@ -16,7 +16,8 @@ setup(
         "Jinja2",
         "setproctitle",
         "pyyaml",
-        "futures"
+        "futures",
+        "requests"
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
