@@ -64,7 +64,7 @@ Logging/Output
 --------
 
 For debugging, the use of the verbose mode is recommended. Using
-verbose mode disable logging to syslog.
+verbose mode disables logging to syslog.
 
 The dry run mode will only read the statefile and log/print the
 decisions that would be made (use of the verbose switch is
