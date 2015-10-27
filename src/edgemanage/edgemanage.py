@@ -162,8 +162,16 @@ class EdgeManage(object):
 
         return list(set(still_healthy))
 
-    def make_edges_live(self, force_update):
+    def make_edges_live(self, force_update, canary_data={}):
 
+        '''
+        Choose edges, write out zone files and state info.
+
+        Args:
+         force_update: write out renewed zone files even if no changes needed
+         canary_data: per-site canary site->IP dict
+
+        '''
         # Returns true if any changes were made.
 
         good_enough = self.config["goodenough"]
