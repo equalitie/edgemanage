@@ -172,7 +172,7 @@ class EdgeManage(object):
 
         Args:
          force_update: write out renewed zone files even if no changes needed
-         canary_data: per-site canary site->IP dict
+         canary_data: per-site canary site->edge_name dict
 
         '''
         # Returns true if any changes were made.
@@ -282,9 +282,32 @@ class EdgeManage(object):
                 else:
                     any_changes = True
 
+                canary_edge = None
+                if zone_name in canary_data:
+                    # NOTE: I am VERY unhappy about altering control
+                    # flow as regards edge selection here but it would
+                    # be infinitely messier to add zone tracking to
+                    # anything outside of the edgemanage object
+                    # itself.
+
+                    # We have a canary edge configured, let's see if
+                    # it's healthy
+                    canary_name = canary_data[zone_name]
+                    canary_health = self.decision.get_judgement(canary_name)
+
+                    if canary_health == "pass" or canary_health == "pass_window":
+                        logging.info("Zone %s has a canary edge configured: %s",
+                                     zone_name, canary_name)
+                        canary_edge = canary_name
+                    else:
+                        logging.info(
+                            ("Zone %s has %s configued as a canary but it is "
+                             "in state %s so it will not be used. "),
+                            zone_name, canary_name, canary_health)
+
                 complete_zone_str = self.edgelist_obj.generate_zone(
                     zone_name, os.path.join(self.config["zonetemplate_dir"], self.dnet),
-                    self.config["dns"]
+                    self.config["dns"], canary_edge=canary_edge
                 )
 
                 complete_zone_path = os.path.join(self.config["named_dir"],
