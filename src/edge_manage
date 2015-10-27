@@ -89,7 +89,20 @@ def run_command_list(commands):
 
 
 
-def main(dnet, daemonise, dry_run, config, state_obj, force_update=False):
+def main(dnet, dry_run, config, state_obj,
+         canary_data={}, force_update=False):
+
+    '''
+
+    Args:
+     dnet: a string containing the dnet label to operate upon
+     dry_run: if true, no changes will be written
+     state_obj: the StateFile object storing Edgemanage state for this dnet
+     config: a dictionary containing the config
+     canary_data: a site-to-IP mapping. Used for canary behaviour. See docs.
+     force_update: update all zone files regardless of whether we need to
+
+    '''
 
     edgemanage_object = EdgeManage(dnet, config, state, dry_run)
 
@@ -110,7 +123,7 @@ def main(dnet, daemonise, dry_run, config, state_obj, force_update=False):
     verification_failues = edgemanage_object.do_edge_tests()
     state_obj.verification_failures = verification_failues
 
-    any_changes = edgemanage_object.make_edges_live(force_update)
+    any_changes = edgemanage_object.make_edges_live(force_update, canary_data)
 
     if edgemanage_object.edgelist_obj.get_live_edges() != state_obj.last_live:
         # There has been a rotation as our old list doesn't equal the new
@@ -200,6 +213,15 @@ if __name__ == "__main__":
     logging.debug("Command line options are %s", str(args))
     logging.debug("Full configuration is:\n %s", pprint.pformat(config))
 
+    canary_data = {}
+    if "canary_files" in config:
+        canary_path = config["canary_files"].format(dnet=args.dnet)
+        if os.path.isfile(canary_path):
+            logging.debug("Loading canary file from %s", canary_path)
+            with open(canary_path) as canary_f:
+                canary_data = yaml.load(canary_f.read())
+                logging.debug("Canary data is %s", str(canary_data))
+
     lock_f = open(config["lockfile"], "w")
 
     if not util.acquire_lock(lock_f):
@@ -216,10 +238,12 @@ if __name__ == "__main__":
                 daemon_setup()
 
             while True:
-                main(args.dnet, args.daemonise, args.dryrun, config, state, args.force_update)
+                main(args.dnet, args.dryrun, config,
+                     state, canary_data, args.force_update)
                 time.sleep(config["run_frequency"])
         else:
-            main(args.dnet, args.daemonise, args.dryrun, config, state, args.force_update)
+            main(args.dnet, args.dryrun, config,
+                 state, canary_data, args.force_update)
 
     state.set_last_run()
     if not args.dryrun:
