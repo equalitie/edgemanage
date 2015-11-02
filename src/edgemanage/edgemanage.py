@@ -85,8 +85,11 @@ class EdgeManage(object):
         return current_mtimes
 
     def add_edge_state(self, edge, edge_healthdata_path, nowrite=False):
-        edge_state = EdgeState(edge, edge_healthdata_path, nowrite=nowrite)
-        self.edge_states[edge] = edge_state
+        try:
+            edge_state = EdgeState(edge, edge_healthdata_path, nowrite=nowrite)
+            self.edge_states[edge] = edge_state
+        except Exception as e:
+            logging.error("failed to load state for edge %s: %s", edge, str(e))
 
     def do_edge_tests(self):
 

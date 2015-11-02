@@ -17,6 +17,7 @@ import argparse
 import time
 import json
 import os
+import sys
 
 import yaml
 
@@ -63,8 +64,13 @@ def main(args):
 
     now = time.time()
     for edge in edge_list:
-        edge_state = EdgeState(edge, config["healthdata_store"],
-                               nowrite=True)
+
+        try:
+            edge_state = EdgeState(edge, config["healthdata_store"],
+                                   nowrite=True)
+        except Exception as e:
+            sys.stderr.write("failed to load state for edge %s: %s\n" % (edge, str(e)))
+            continue
 
         interested = True
         if args.health and edge_state.health != args.health:

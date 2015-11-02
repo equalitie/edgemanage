@@ -34,7 +34,11 @@ def main(dnet, edgename, config, mode, comment=None, no_syslog=False):
     if not os.path.exists(os.path.join(config["healthdata_store"], "%s.edgestore" % edgename)):
         raise Exception("Edge %s is not initialised yet - not setting status" % edgename)
 
-    edge_state = EdgeState(edgename, config["healthdata_store"], nowrite=False)
+    try:
+        edge_state = EdgeState(edgename, config["healthdata_store"], nowrite=False)
+    except Exception as e:
+        raise SystemExit("failed to load state for edge %s: %s" % (edgename, str(e)))
+
     edge_state.set_mode(mode)
 
     if comment:
