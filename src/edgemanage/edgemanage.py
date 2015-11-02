@@ -172,7 +172,7 @@ class EdgeManage(object):
 
         Args:
          force_update: write out renewed zone files even if no changes needed
-         canary_data: per-site canary site->edge_name dict
+         canary_data: per-site canary site->canary_ip dict
 
         '''
         # Returns true if any changes were made.

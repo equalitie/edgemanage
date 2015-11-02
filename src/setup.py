@@ -17,7 +17,8 @@ setup(
         "setproctitle",
         "pyyaml",
         "futures",
-        "requests"
+        "requests",
+        "ipaddr"
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
