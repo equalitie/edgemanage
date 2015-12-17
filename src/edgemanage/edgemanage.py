@@ -44,6 +44,12 @@ class EdgeManage(object):
         # Object we will use to make a decision about edge liveness based
         # on the stat stores
         self.decision = DecisionMaker()
+        self.canary_decision = None
+
+        if self.canary_data:
+            # Because we treat the behaviour of canaries differently
+            # let's ringfence them here.
+            self.canary_decision = DecisionMaker()
 
         self.edge_states = {}
 
@@ -59,11 +65,17 @@ class EdgeManage(object):
 
         return testobject_hash
 
-    def __init__(self, dnet, config, state, dry_run=False):
+    def __init__(self, dnet, config, state, canary_data={}, dry_run=False):
         '''
          Upper-level edgemanage object that is used to create
         lower-level edgemanage objects and accomplish the overall task
         of edge testing, rotation and zone file writing.
+
+        Args:
+         dnet: string representing the dnet for which we're writing rules
+         config: configuration dictionary
+         state: state object
+         canary_data: per-site canary site->canary_ip dict
 
         '''
 
@@ -71,6 +83,8 @@ class EdgeManage(object):
         self.dry_run = dry_run
         self.config = config
         self.state_obj = state
+
+        self.canary_data = canary_data
 
         self._init_objects()
 
@@ -87,9 +101,11 @@ class EdgeManage(object):
     def add_edge_state(self, edge, edge_healthdata_path, nowrite=False):
         try:
             edge_state = EdgeState(edge, edge_healthdata_path, nowrite=nowrite)
-            self.edge_states[edge] = edge_state
-        except Exception as e:
-            logging.error("failed to load state for edge %s: %s", edge, str(e))
+        except ValueError as exc:
+            logging.error("Failed to load edgestate file for %s: %s", edge, str(exc))
+            return False
+        self.edge_states[edge] = edge_state
+        return True
 
     def do_edge_tests(self):
 
@@ -103,6 +119,13 @@ class EdgeManage(object):
         with ProcessPoolExecutor() as executor:
             for edgename in self.edge_states:
                 edge_t = EdgeTest(edgename, self.testobject_hash)
+                edgescore_futures.append(executor.submit(future_fetch,
+                                                         edge_t, test_host,
+                                                         test_path,
+                                                         test_proto,
+                                                         test_verify))
+            for canaryname in self.canary_data.values():
+                edge_t = EdgeTest(canaryname, self.testobject_hash)
                 edgescore_futures.append(executor.submit(future_fetch,
                                                          edge_t, test_host,
                                                          test_path,
@@ -132,8 +155,11 @@ class EdgeManage(object):
             if self.edge_states[edge].mode == "unavailable":
                 logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
             else:
-                # otherwise add it to the decision maker
-                self.decision.add_edge_state(self.edge_states[edge])
+                # otherwise add it to the appropriate decision maker
+                if edge in self.edge_states:
+                    self.decision.add_edge_state(self.edge_states[edge])
+                elif edge in self.canary_data.values():
+                    self.canary_decision.add_edge_state(self.edge_states[edge])
 
         return verification_failues
 
@@ -165,14 +191,13 @@ class EdgeManage(object):
 
         return list(set(still_healthy))
 
-    def make_edges_live(self, force_update, canary_data={}):
+    def make_edges_live(self, force_update):
 
         '''
         Choose edges, write out zone files and state info.
 
         Args:
          force_update: write out renewed zone files even if no changes needed
-         canary_data: per-site canary site->canary_ip dict
 
         '''
         # Returns true if any changes were made.
@@ -283,7 +308,7 @@ class EdgeManage(object):
                     any_changes = True
 
                 canary_edge = None
-                if zone_name in canary_data:
+                if zone_name in self.canary_data:
                     # NOTE: I am VERY unhappy about altering control
                     # flow as regards edge selection here but it would
                     # be infinitely messier to add zone tracking to
@@ -292,18 +317,18 @@ class EdgeManage(object):
 
                     # We have a canary edge configured, let's see if
                     # it's healthy
-                    canary_name = canary_data[zone_name]
-                    canary_health = self.decision.get_judgement(canary_name)
+                    canary_ip = self.canary_data[zone_name]
+                    canary_health = self.canary_decision.get_judgement(canary_ip)
 
                     if canary_health == "pass" or canary_health == "pass_window":
                         logging.info("Zone %s has a canary edge configured: %s",
-                                     zone_name, canary_name)
-                        canary_edge = canary_name
+                                     zone_name, canary_ip)
+                        canary_edge = canary_ip
                     else:
                         logging.info(
                             ("Zone %s has %s configued as a canary but it is "
                              "in state %s so it will not be used. "),
-                            zone_name, canary_name, canary_health)
+                            zone_name, canary_ip, canary_health)
 
                 complete_zone_str = self.edgelist_obj.generate_zone(
                     zone_name, os.path.join(self.config["zonetemplate_dir"], self.dnet),
