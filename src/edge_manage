@@ -105,27 +105,20 @@ def main(dnet, dry_run, config, state_obj,
 
     '''
 
-    edgemanage_object = EdgeManage(dnet, config, state, dry_run)
+    edgemanage_object = EdgeManage(dnet, config, state, canary_data, dry_run)
 
     # Read the edgelist as a flat file
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
         logging.info("Edge list is %s", str(edge_list))
 
-
-    if canary_data:
-        # Validate list of canary edgenames
-        bad_canaries = []
-        for canary_site, canary_ip in canary_data.iteritems():
-            try:
-                ipaddr_canary = ipaddr.IPAddress(canary_ip)
-            except ValueError as exc:
-                logging.error("Canary for %s is invalid: value %s is not an IP address",
-                              canary_site, canary_ip)
-
     # Load or create our edge state files
     for edge in edge_list:
-        edgemanage_object.add_edge_state(edge, config["healthdata_store"], nowrite=dry_run)
+        edgemanage_object.add_edge_state(edge, config["healthdata_store"],
+                                         nowrite=dry_run)
+    for canary_ip in canary_data.values():
+        edgemanage_object.add_edge_state(canary_ip, config["healthdata_store"],
+                                         nowrite=dry_run)
 
     # Run any run_before commands
     if "commands" in config and "run_before" in config["commands"]:
@@ -135,7 +128,7 @@ def main(dnet, dry_run, config, state_obj,
     verification_failues = edgemanage_object.do_edge_tests()
     state_obj.verification_failures = verification_failues
 
-    any_changes = edgemanage_object.make_edges_live(force_update, canary_data)
+    any_changes = edgemanage_object.make_edges_live(force_update)
 
     if edgemanage_object.edgelist_obj.get_live_edges() != state_obj.last_live:
         # There has been a rotation as our old list doesn't equal the new
@@ -233,6 +226,20 @@ if __name__ == "__main__":
             with open(canary_path) as canary_f:
                 canary_data = yaml.load(canary_f.read())
                 logging.debug("Canary data is %s", str(canary_data))
+
+    if canary_data:
+        # Validate list of canary edgenames
+        bad_canaries = []
+        for canary_site, canary_ip in canary_data.iteritems():
+            try:
+                ipaddr_canary = ipaddr.IPAddress(canary_ip)
+            except ValueError as exc:
+                logging.error(("Canary for %s is invalid: value %s is not an "
+                               "IP address. Not using"),
+                              canary_site, canary_ip)
+                bad_canaries.append(canary_site)
+        for bad_canary in bad_canaries:
+            del(canary_data[bad_canary])
 
     lock_f = open(config["lockfile"], "w")
 
