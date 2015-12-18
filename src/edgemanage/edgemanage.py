@@ -215,6 +215,10 @@ class EdgeManage(object):
 
         threshold_stats = self.decision.check_threshold(good_enough)
 
+        if self.canary_decision:
+            canary_stats = self.canary_decision.check_threshold(good_enough)
+            logging.debug("Stats of canary threshold check are %s", str(canary_stats))
+
         # Get the list of previously healthy edges
         still_healthy_from_last_run = self.check_last_live()
 
@@ -318,6 +322,7 @@ class EdgeManage(object):
                     # We have a canary edge configured, let's see if
                     # it's healthy
                     canary_ip = self.canary_data[zone_name]
+
                     canary_health = self.canary_decision.get_judgement(canary_ip)
 
                     if canary_health == "pass" or canary_health == "pass_window":
