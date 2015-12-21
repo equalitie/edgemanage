@@ -114,7 +114,10 @@ class EdgeList(object):
 
         if canary_edge:
             # Remove a selected edge and insert the canary edge
-            del(edge_list_to_write[random.randrange(len(edge_list_to_write))])
+            removed_edge = random.randrange(len(edge_list_to_write))
+            logging.info("Domain %s uses a canary edge of %s, removing %s",
+                         domain, canary_edge, edge_list_to_write[removed_edge])
+            del(edge_list_to_write[removed_edge])
             edge_list_to_write.append(canary_edge)
 
         #TODO cache looked up IP addresses, don't do this every time
