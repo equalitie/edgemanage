@@ -87,6 +87,11 @@ named_dir: /var/cache/bind/
 # contain {dnet}
 live_list: /var/tmp/edges.{dnet}.live
 
+# Canary interfaces - see the README for an explanation of how canary
+# interfaces work. The path can contain per-dnet files, mapping domain
+# names to IP addresses.
+canary_files: /etc/edgemanage/canaries/{dnet}
+
 # Run commands before or after execution, or after a rotation/new zone
 # file being written out. A good example of a run_after_changes is
 # reloading your named, but in theory this could be anything!

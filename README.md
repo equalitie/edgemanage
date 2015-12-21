@@ -94,6 +94,39 @@ caches and so on.
 See the `edgemanage.yaml` file for documentation of the configuration
 options.
 
+Canaries
+-------
+
+So-called "canary" edges are used to assign individual network
+resources to a single zone. They are a completely optional part of
+Edgemanage configuration, but may be useful for deploying special
+configurations, per-domain systems or for detection/analysis
+approaches.
+
+An example of a use of this functionality would be if you had a number
+of systems that were present in a network environment where incoming
+traffic is filtered upstream somehow. If canaries were to be included
+for some domains with IP addresses corresponding to a system with
+unfiltered access, the canary IPs can be used for traffic capture and
+analysis without needing to discard all other hosts. This approach is
+also useful for low-cost setups where many sites are hosted and attack
+traffic such as UDP is involved. Using a per-zone IP address allows
+for a differential diagnosis of attack traffic, isolating which sites
+are attracting attacks.
+
+To give a worked example - mydnet1 has a canary file in
+```/etc/edgemanage/canaries/mydnet1```. This path is set in
+edgemanage.yaml. On run, the file in
+```/etc/edgemanage/canaries/mydnet1``` is loaded and the YAML data is
+read (it should contain only a list of site: ipaddress pairs). Let's
+say mydnet1 contains example.net: 10.0.2.22. Edgemanage
+tests 10.0.2.22 as it would any other edge but never selects it for
+what edgemanage considers to be "liveness". If
+10.0.2.22 is in a passing state, a random edge from the current live
+set is removed from example.net's configuration and 10.0.2.22 is
+added. No other zones are affected and zone files are written as
+normal.
+
 Monitoring
 --------
 
