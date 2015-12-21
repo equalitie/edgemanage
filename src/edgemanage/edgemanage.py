@@ -155,11 +155,12 @@ class EdgeManage(object):
             if self.edge_states[edge].mode == "unavailable":
                 logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
             else:
+
                 # otherwise add it to the appropriate decision maker
-                if edge in self.edge_states:
-                    self.decision.add_edge_state(self.edge_states[edge])
-                elif edge in self.canary_data.values():
+                if edge in self.canary_data.values():
                     self.canary_decision.add_edge_state(self.edge_states[edge])
+                elif edge in self.edge_states:
+                    self.decision.add_edge_state(self.edge_states[edge])
 
         return verification_failues
 
@@ -176,8 +177,16 @@ class EdgeManage(object):
         # Make sure that any edges that were in rotation are still
         # in a passing state. Discard any that are failing checks.
         for oldlive_edge in self.state_obj.last_live:
-            if oldlive_edge in self.decision.current_judgement and \
-               self.decision.get_judgement(oldlive_edge) == "pass":
+
+            try:
+                if oldlive_edge in self.canary_data:
+                    oldlive_health = self.canary_decision.get_judgement(oldlive_edge)
+                else:
+                    oldlive_health = self.decision.get_judgement(oldlive_edge)
+            except KeyError as exc:
+                oldlive_health = None
+
+            if oldlive_edge in self.decision.current_judgement and oldlive_health == "pass":
                 still_healthy.append(oldlive_edge)
             elif oldlive_edge not in self.decision.current_judgement:
                 logging.warning(("Discarding previously live edge %s "
@@ -187,7 +196,7 @@ class EdgeManage(object):
                 logging.debug(
                     "Discarding previously live edge %s because it is in state %s",
                     oldlive_edge,
-                    self.decision.current_judgement[oldlive_edge])
+                    self.decision.get_judgement(oldlive_edge))
 
         return list(set(still_healthy))
 
@@ -364,17 +373,23 @@ class EdgeManage(object):
         # Note in the statefile that this edge has been put into rotation
         for edge in self.edge_states:
 
+            if edge in self.canary_data.values():
+                is_canary = True
+                current_health = self.canary_decision.get_judgement(edge)
+            else:
+                is_canary = False
+                current_health = self.decision.get_judgement(edge)
+
             if self.edgelist_obj.is_live(edge):
                 # Note in the statefile that this edge has been put into rotation
-                logging.debug("Setting edge %s to state in", edge)
+                logging.debug("Setting %sedge %s to state in", "canary " if is_canary else "", edge)
                 self.edge_states[edge].add_rotation()
                 self.edge_states[edge].set_state("in")
             else:
-                logging.debug("Setting edge %s to state out", edge)
+                logging.debug("Setting %sedge %s to state out", "canary " if is_canary else "", edge)
                 self.edge_states[edge].set_state("out")
 
             if self.edge_states[edge].mode != "unavailable":
-                current_health = self.decision.get_judgement(edge)
                 self.edge_states[edge].set_health(current_health)
 
         self.state_obj.zone_mtimes = self.current_mtimes
