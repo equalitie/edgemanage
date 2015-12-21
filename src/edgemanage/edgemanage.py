@@ -155,7 +155,6 @@ class EdgeManage(object):
             if self.edge_states[edge].mode == "unavailable":
                 logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
             else:
-
                 # otherwise add it to the appropriate decision maker
                 if edge in self.canary_data.values():
                     self.canary_decision.add_edge_state(self.edge_states[edge])
@@ -331,7 +330,6 @@ class EdgeManage(object):
                     # We have a canary edge configured, let's see if
                     # it's healthy
                     canary_ip = self.canary_data[zone_name]
-
                     canary_health = self.canary_decision.get_judgement(canary_ip)
 
                     if canary_health == "pass" or canary_health == "pass_window":
