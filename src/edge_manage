@@ -15,6 +15,7 @@ import sys
 import time
 import yaml
 
+import ipaddr
 import setproctitle
 
 __author__ = "nosmo@nosmo.me"
@@ -89,9 +90,22 @@ def run_command_list(commands):
 
 
 
-def main(dnet, daemonise, dry_run, config, state_obj, force_update=False):
+def main(dnet, dry_run, config, state_obj,
+         canary_data={}, force_update=False):
 
-    edgemanage_object = EdgeManage(dnet, config, state, dry_run)
+    '''
+
+    Args:
+     dnet: a string containing the dnet label to operate upon
+     dry_run: if true, no changes will be written
+     state_obj: the StateFile object storing Edgemanage state for this dnet
+     config: a dictionary containing the config
+     canary_data: a site-to-canary_ip map. Used for canary behaviour. See docs
+     force_update: update all zone files regardless of whether we need to
+
+    '''
+
+    edgemanage_object = EdgeManage(dnet, config, state, canary_data, dry_run)
 
     # Read the edgelist as a flat file
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
@@ -100,7 +114,11 @@ def main(dnet, daemonise, dry_run, config, state_obj, force_update=False):
 
     # Load or create our edge state files
     for edge in edge_list:
-        edgemanage_object.add_edge_state(edge, config["healthdata_store"], nowrite=dry_run)
+        edgemanage_object.add_edge_state(edge, config["healthdata_store"],
+                                         nowrite=dry_run)
+    for canary_ip in canary_data.values():
+        edgemanage_object.add_edge_state(canary_ip, config["healthdata_store"],
+                                         nowrite=dry_run)
 
     # Run any run_before commands
     if "commands" in config and "run_before" in config["commands"]:
@@ -200,6 +218,29 @@ if __name__ == "__main__":
     logging.debug("Command line options are %s", str(args))
     logging.debug("Full configuration is:\n %s", pprint.pformat(config))
 
+    canary_data = {}
+    if "canary_files" in config:
+        canary_path = config["canary_files"].format(dnet=args.dnet)
+        if os.path.isfile(canary_path):
+            logging.debug("Loading canary file from %s", canary_path)
+            with open(canary_path) as canary_f:
+                canary_data = yaml.load(canary_f.read())
+                logging.debug("Canary data is %s", str(canary_data))
+
+    if canary_data:
+        # Validate list of canary edgenames
+        bad_canaries = []
+        for canary_site, canary_ip in canary_data.iteritems():
+            try:
+                ipaddr_canary = ipaddr.IPAddress(canary_ip)
+            except ValueError as exc:
+                logging.error(("Canary for %s is invalid: value %s is not an "
+                               "IP address. Not using"),
+                              canary_site, canary_ip)
+                bad_canaries.append(canary_site)
+        for bad_canary in bad_canaries:
+            del(canary_data[bad_canary])
+
     lock_f = open(config["lockfile"], "w")
 
     if not util.acquire_lock(lock_f):
@@ -216,10 +257,12 @@ if __name__ == "__main__":
                 daemon_setup()
 
             while True:
-                main(args.dnet, args.daemonise, args.dryrun, config, state, args.force_update)
+                main(args.dnet, args.dryrun, config,
+                     state, canary_data, args.force_update)
                 time.sleep(config["run_frequency"])
         else:
-            main(args.dnet, args.daemonise, args.dryrun, config, state, args.force_update)
+            main(args.dnet, args.dryrun, config,
+                 state, canary_data, args.force_update)
 
     state.set_last_run()
     if not args.dryrun:

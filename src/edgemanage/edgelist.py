@@ -99,7 +99,7 @@ class EdgeList(object):
             return selected_edges[0]
 
     def generate_zone(self, domain, zonefile_dir, dns_config,
-                      serial_number=None):
+                      serial_number=None, canary_edge=None):
         logging.debug("Started generating zone for %s", domain)
 
         if not all([ i.endswith(".") for i in dns_config["ns_records"] ]):
@@ -110,8 +110,19 @@ class EdgeList(object):
         if "rotate_zones" in dns_config:
             rotate_zones = dns_config["rotate_zones"]
 
+        edge_list_to_write = self.get_live_edges()
+
+        if canary_edge:
+            # Remove a selected edge and insert the canary edge
+            removed_edge = random.randrange(len(edge_list_to_write))
+            logging.info("Domain %s uses a canary edge of %s, removing %s",
+                         domain, canary_edge, edge_list_to_write[removed_edge])
+            del(edge_list_to_write[removed_edge])
+            edge_list_to_write.append(canary_edge)
+
+        #TODO cache looked up IP addresses, don't do this every time
         live_edge_ips = []
-        for live_edge in self.get_live_edges():
+        for live_edge in edge_list_to_write:
             try:
                 edge_ip = socket.gethostbyname(live_edge)
                 live_edge_ips.append(edge_ip)
