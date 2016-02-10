@@ -5,10 +5,8 @@ Requirements
 --------
 
 If installing on a Debian-based system, you'll probably need to do
-`apt-get install python-yaml python-requests python-jinja2`. Odds are
-you will also need to `apt-get install python-concurrent.futures`,
-this depends on the version of Python you're running and also how your
-maintainer has built it - Debian wheezy requires this package.
+`apt-get install python-yaml python-requests python-jinja2 \
+python-setuptools python-setproctitle build-essential`.
 
 Alternatively, if using `pip`, simply run `pip install -r
 requirements.txt`.
