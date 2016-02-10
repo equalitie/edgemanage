@@ -5,8 +5,7 @@ Requirements
 --------
 
 If installing on a Debian-based system, you'll probably need to do
-`apt-get install python-yaml python-requests python-jinja2 \
-python-setuptools python-setproctitle build-essential`.
+`apt-get install python-yaml python-requests python-jinja2 python-concurrent.futures python-setuptools python-setproctitle build-essential`.
 
 Alternatively, if using `pip`, simply run `pip install -r
 requirements.txt`.
