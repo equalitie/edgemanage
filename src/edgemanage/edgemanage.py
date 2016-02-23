@@ -92,7 +92,7 @@ class EdgeManage(object):
         # Get a complete list of zone names
         current_mtimes = {}
         for zonefile in glob.glob("%s/%s/*.zone" % (self.config["zonetemplate_dir"], self.dnet)):
-            zone_name = zonefile.split(".zone")[0].split("/")[-1]
+            zone_name = zonefile.rsplit(".zone", 1)[0].split("/")[-1]
             # And while we're here, let's get their mtimes
             current_mtime = int(os.stat(zonefile).st_mtime)
             current_mtimes[zone_name] = current_mtime
