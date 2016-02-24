@@ -64,5 +64,18 @@ class EdgeListTest(unittest.TestCase):
             known_zone = known_zone_f.read()
         self.assertEqual(known_zone, new_zone)
 
+    def test_generate_dotzonefile(self):
+        a = EdgeList()
+        a.add_edge("example.com")
+        a.set_edge_live("example.com")
+        new_zone = a.generate_zone("test.zone", "test_data", {"ns_records": ["adns1.easydns.com."],
+                                                             "soa_mailbox": "test.derp.com",
+                                                             "soa_nameserver": "derpderpderp.com"
+                                                         },
+                                   serial_number=1234)
+        with open("test_data/test.zone.output") as known_zone_f:
+            known_zone = known_zone_f.read()
+        self.assertEqual(known_zone, new_zone)
+
 if __name__ == '__main__':
     unittest.main()
