@@ -1,0 +1,3 @@
+{
+  "tests/test_util.py::UtilTest::test_acquire_lock": true
+}

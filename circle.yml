@@ -4,8 +4,6 @@ machine:
       2.7.6
 
 test:
-  pre:
-    - cd ~/edgemanage/src/edgemanage
   override:
     - python -m unittest discover
 
