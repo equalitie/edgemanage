@@ -1,4 +1,4 @@
 test:
   override:
-    - python -m unittest discover
+    - py.test
 
