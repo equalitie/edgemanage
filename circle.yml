@@ -5,7 +5,7 @@ machine:
 
 test:
   pre:
-    - cd src/edgemanage
+    - cd ~/edgemanage/src/edgemanage
   override:
     - python -m unittest discover
 
