@@ -5,5 +5,5 @@ machine:
 
 test:
   override:
-    - py.test
+    - python -m unittest discover
 
