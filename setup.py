@@ -27,5 +27,5 @@ setup(
         "Topic :: Internet :: Name Service (DNS)",
         "Topic :: Utilities",
         ],
-    scripts = ["edge_manage", "edge_query", "edge_conf"],
+    scripts = ["edgemanage/edge_manage", "edgemanage/edge_query", "edgemanage/edge_conf"],
     )
