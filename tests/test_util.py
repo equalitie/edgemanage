@@ -24,7 +24,7 @@ class UtilTest(unittest.TestCase):
             #
             # This is even more disgusting now tests are in a separate directory!
             test_lock_fail = subprocess.Popen(
-                ["/usr/bin/python", "-c", ("import os; import sys; "
+                ["python", "-c", ("import os; import sys; "
                 "sys.path.insert(0, os.path.abspath('..')); "
                 "import edgemanage; "
                 "ret = edgemanage.util.acquire_lock(open('%s', 'w')); "
