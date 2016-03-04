@@ -12,6 +12,7 @@ setup(
     url = "http://github.com/equalitie/edgemanage",
     packages=['edgemanage'],
     package_data={'edgemanage': ['templates/*.j2']},
+    zip_safe=False,
     install_requires=[
         "Jinja2",
         "setproctitle",
