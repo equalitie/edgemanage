@@ -7,6 +7,13 @@ large volumes of traffic, attack or other potential instability. If a
 machine is found to be underperforming, it is replace by a more
 performant host to ensure maximum availability.
 
+Branch build statuses
+---------------------
+
+Master: [![Circle CI](https://circleci.com/gh/equalitie/edgemanage/tree/master.svg?style=svg&circle-token=b77f796781934f76fbac3446708f49f544cdac71)](https://circleci.com/gh/equalitie/edgemanage/tree/master)
+
+Develop: [![Circle CI](https://circleci.com/gh/equalitie/edgemanage/tree/develop.svg?style=svg&circle-token=b77f796781934f76fbac3446708f49f544cdac71)](https://circleci.com/gh/equalitie/edgemanage/tree/develop)
+
 Overview
 --------
 
