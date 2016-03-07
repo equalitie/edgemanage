@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 import unittest
-from decisionmaker import DecisionMaker
+
+from .context import edgemanage
 
 import test_edgestate
-
-from const import FETCH_TIMEOUT
 
 TEST_EDGE = "testedge1"
 GOOD_ENOUGH = 1.0
@@ -24,12 +23,12 @@ class DecisionMakerTest(unittest.TestCase):
 
     def _get_error_edge_state(self):
         es = test_edgestate.EdgeStateTest._make_store()
-        es.add_value(FETCH_TIMEOUT)
+        es.add_value(edgemanage.const.FETCH_TIMEOUT)
         return es
 
     def test_error_state(self):
         es = self._get_error_edge_state()
-        dm = DecisionMaker()
+        dm = edgemanage.decisionmaker.DecisionMaker()
         dm.add_edge_state(es)
         self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {"fail": 1,
                                                            'pass_window': 0,
@@ -38,7 +37,7 @@ class DecisionMakerTest(unittest.TestCase):
 
     def test_good_state(self):
         es = self._get_passing_edge_state()
-        dm = DecisionMaker()
+        dm = edgemanage.decisionmaker.DecisionMaker()
         dm.add_edge_state(es)
         self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {"fail": 0,
                                                            'pass_window': 0,
@@ -47,7 +46,7 @@ class DecisionMakerTest(unittest.TestCase):
 
     def test_fail_state(self):
         es = self._get_failing_edge_state()
-        dm = DecisionMaker()
+        dm = edgemanage.decisionmaker.DecisionMaker()
         dm.add_edge_state(es)
         self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {"fail": 1,
                                                            'pass_window': 0,

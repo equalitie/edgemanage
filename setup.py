@@ -12,6 +12,7 @@ setup(
     url = "http://github.com/equalitie/edgemanage",
     packages=['edgemanage'],
     package_data={'edgemanage': ['templates/*.j2']},
+    zip_safe=False,
     install_requires=[
         "Jinja2",
         "setproctitle",
@@ -27,5 +28,5 @@ setup(
         "Topic :: Internet :: Name Service (DNS)",
         "Topic :: Utilities",
         ],
-    scripts = ["edge_manage", "edge_query", "edge_conf"],
+    scripts = ["edgemanage/edge_manage", "edgemanage/edge_query", "edgemanage/edge_conf"],
     )
