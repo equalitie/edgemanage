@@ -2,3 +2,7 @@
 *~
 *pyo
 .coverage
+.cache/
+build/
+dist/
+edgemanage.egg-info/

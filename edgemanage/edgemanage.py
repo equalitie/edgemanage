@@ -370,13 +370,14 @@ class EdgeManage(object):
         # We've got our edges, one way or another - let's set their states
         # Note in the statefile that this edge has been put into rotation
         for edge in self.edge_states:
-
-            if edge in self.canary_data.values():
-                is_canary = True
-                current_health = self.canary_decision.get_judgement(edge)
-            else:
-                is_canary = False
-                current_health = self.decision.get_judgement(edge)
+            if self.edge_states[edge].mode != "unavailable":
+                if edge in self.canary_data.values():
+                    is_canary = True
+                    current_health = self.canary_decision.get_judgement(edge)
+                else:
+                    is_canary = False
+                    current_health = self.decision.get_judgement(edge)
+                self.state_obj.zone_mtimes = self.current_mtimes
 
             if self.edgelist_obj.is_live(edge):
                 # Note in the statefile that this edge has been put into rotation
@@ -386,10 +387,5 @@ class EdgeManage(object):
             else:
                 logging.debug("Setting %sedge %s to state out", "canary " if is_canary else "", edge)
                 self.edge_states[edge].set_state("out")
-
-            if self.edge_states[edge].mode != "unavailable":
-                self.edge_states[edge].set_health(current_health)
-
-        self.state_obj.zone_mtimes = self.current_mtimes
 
         return any_changes or edgelist_changed
