@@ -13,9 +13,8 @@ requirements.txt`.
 Installation
 --------
 
-Change directory to `src` and run `python setup.py install`. Unless
-you have a bindir and libdir that is owned by your user, you'll need
-to do this as root.
+Run `python setup.py install`. Unless you have a bindir and libdir that is
+owned by your user, you'll need to do this as root.
 
 Configuration
 --------
