@@ -238,7 +238,7 @@ class EdgeManage(object):
                         edgename)
 
                     # Don't set edgelist_changed to True if we're
-                    # already heathy and live
+                    # already healthy and live
                     if not edgename in still_healthy_from_last_run:
                         self.edgelist_obj.add_edge(edgename, state="pass", live=True)
                         edgelist_changed = True
