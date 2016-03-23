@@ -339,6 +339,7 @@ class EdgeManage(object):
                         logging.info("Zone %s has a canary edge configured: %s",
                                      zone_name, canary_ip)
                         canary_edge = canary_ip
+                        self.state_obj.active_canaries[zone_name] = canary_ip
                     else:
                         logging.info(
                             ("Zone %s has %s configued as a canary but it is "
