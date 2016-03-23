@@ -227,7 +227,8 @@ class EdgeManage(object):
             canary_stats = self.canary_decision.check_threshold(good_enough)
             logging.debug("Stats of canary threshold check are %s", str(canary_stats))
 
-        # Get the list of previously healthy edges
+        # Get the list of edges that were 'in' (live) the last time and are
+        # still healthy
         still_healthy_from_last_run = self.check_last_live()
 
         for edgename, edge_state in self.edge_states.iteritems():
