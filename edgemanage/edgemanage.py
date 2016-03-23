@@ -306,6 +306,8 @@ class EdgeManage(object):
                          self.edgelist_obj.get_live_edges())
 
             # Iterate over every *zone file in the zonetemplate dir and write out files.
+            # (current_mtimes is an array that associates a zone name to its
+            # mtime)
             for zone_name in self.current_mtimes:
 
                 # Unless an update is forced:
