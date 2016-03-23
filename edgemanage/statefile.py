@@ -3,7 +3,7 @@ import time
 
 class StateFile(object):
 
-    ''' A simple stat storage object, a glorified dict '''
+    ''' A simple state storage object, a glorified dict '''
 
     def __init__(self, existing_dict={}):
 
