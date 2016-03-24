@@ -334,23 +334,19 @@ class EdgeManage(object):
                     # Is the canary different from the one used before?
                     # Will we need to re-write zonefile?
                     if not previous_canary and canary_edge:
-                        logging.info ("Canary edge %s for zone %s is new: re-writing zonefile",
-                            canary_edge, zone_name)
+                        logging.info ("Canary edge %s for zone %s is new: re-writing zonefile", canary_edge, zone_name)
                         canary_changed = True
                     elif not canary_edge and previous_canary:
-                        logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile",
-                            canary_edge, zone_name)
+                        logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile", canary_edge, zone_name)
                         canary_changed = True
                     elif canary_edge != previous_canary:
-                        logging.info ("Canary edge for zone %s changed from %s to %s: re-writing zonefile",
-                            zone_name, previous_canary, canary_edge)
+                        logging.info ("Canary edge for zone %s changed from %s to %s: re-writing zonefile", zone_name, previous_canary, canary_edge)
                         canary_changed = True
 
                 elif previous_canary:
                     # We used to have a canary for the domain, but it is not
                     # configured anymore: we'll just need to re-write zonefile
-                    logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile",
-                        canary_edge, zone_name)
+                    logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile", canary_edge, zone_name)
                     canary_changed = True
 
                 if canary_edge:
