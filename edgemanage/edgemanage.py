@@ -345,6 +345,7 @@ class EdgeManage(object):
                             ("Zone %s has %s configued as a canary but it is "
                              "in state %s so it will not be used. "),
                             zone_name, canary_ip, canary_health)
+                        self.state_obj.active_canaries[zone_name] = None
 
                 complete_zone_str = self.edgelist_obj.generate_zone(
                     zone_name, os.path.join(self.config["zonetemplate_dir"], self.dnet),
