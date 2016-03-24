@@ -337,7 +337,7 @@ class EdgeManage(object):
                         logging.info ("Canary edge %s for zone %s is new: re-writing zonefile", canary_edge, zone_name)
                         canary_changed = True
                     elif not canary_edge and previous_canary:
-                        logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile", canary_edge, zone_name)
+                        logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile", previous_canary, zone_name)
                         canary_changed = True
                     elif canary_edge != previous_canary:
                         logging.info ("Canary edge for zone %s changed from %s to %s: re-writing zonefile", zone_name, previous_canary, canary_edge)
