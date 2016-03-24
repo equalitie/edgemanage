@@ -310,42 +310,57 @@ class EdgeManage(object):
             # mtime)
             for zone_name in self.current_mtimes:
 
-                # Unless an update is forced:
-                # * Skip files that haven't been changed
-                # * Write out zone files we haven't seen before
-                # * don't write out updated zone files when we aren't changing edge list
-                old_mtime = self.state_obj.zone_mtimes.get(zone_name)
-                if not force_update and not edgelist_changed and old_mtime and old_mtime == self.current_mtimes[zone_name]:
-                    logging.info("Not writing zonefile for %s because there are no changes pending",
-                                 zone_name)
-                    continue
-                else:
-                    any_changes = True
+                previous_canary = None
+                if zone_name in self.state_obj.active_canaries:
+                    previous_canary = self.state_obj.active_canaries[zone_name]
 
+                canary_changed = False
                 canary_edge = None
                 if zone_name in self.canary_data:
-                    # NOTE: I am VERY unhappy about altering control
-                    # flow as regards edge selection here but it would
-                    # be infinitely messier to add zone tracking to
-                    # anything outside of the edgemanage object
-                    # itself.
-
                     # We have a canary edge configured, let's see if
                     # it's healthy
                     canary_ip = self.canary_data[zone_name]
                     canary_health = self.canary_decision.get_judgement(canary_ip)
-
                     if canary_health == "pass" or canary_health == "pass_window":
                         logging.info("Zone %s has a canary edge configured: %s",
                                      zone_name, canary_ip)
                         canary_edge = canary_ip
-                        self.state_obj.active_canaries[zone_name] = canary_ip
                     else:
                         logging.info(
                             ("Zone %s has %s configued as a canary but it is "
                              "in state %s so it will not be used. "),
                             zone_name, canary_ip, canary_health)
-                        self.state_obj.active_canaries[zone_name] = None
+                   
+                    # Is the canary different from the one used before?
+                    # Will we need to re-write zonefile?
+                    if not previous_canary and canary_edge:
+                        canary_changed = True
+                    elif not canary_edge and previous_canary:
+                        canary_changed = True
+                    elif canary_edge != previous_canary:
+                        canary_changed = True
+
+                elif previous_canary:
+                    # We used to have a canary for the domain, but it is not
+                    # configured anymore: we'll just need to re-write zonefile
+                    canary_changed = True
+
+                if canary_edge:
+                    self.state_obj.active_canaries[zone_name] = canary_edge
+                elif previous_canary:
+                    del(self.state_obj.active_canaries[zone_name])
+
+                # Unless an update is forced:
+                # * Skip files that haven't been changed
+                # * Write out zone files we haven't seen before
+                # * don't write out updated zone files when we aren't changing edge list
+                old_mtime = self.state_obj.zone_mtimes.get(zone_name)
+                if not force_update and not edgelist_changed and not canary_changed and old_mtime and old_mtime == self.current_mtimes[zone_name]:
+                    logging.info("Not writing zonefile for %s because there are no changes pending",
+                                 zone_name)
+                    continue
+                else:
+                    any_changes = True
 
                 complete_zone_str = self.edgelist_obj.generate_zone(
                     zone_name, os.path.join(self.config["zonetemplate_dir"], self.dnet),
@@ -393,4 +408,4 @@ class EdgeManage(object):
                 logging.debug("Setting %sedge %s to state out", "canary " if is_canary else "", edge)
                 self.edge_states[edge].set_state("out")
 
-        return any_changes or edgelist_changed
+        return any_changes or edgelist_changed or canary_changed
