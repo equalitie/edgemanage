@@ -408,4 +408,4 @@ class EdgeManage(object):
                 logging.debug("Setting %sedge %s to state out", "canary " if is_canary else "", edge)
                 self.edge_states[edge].set_state("out")
 
-        return any_changes or edgelist_changed or canary_changed
+        return any_changes or edgelist_changed
