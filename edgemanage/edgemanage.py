@@ -346,7 +346,7 @@ class EdgeManage(object):
                 elif previous_canary:
                     # We used to have a canary for the domain, but it is not
                     # configured anymore: we'll just need to re-write zonefile
-                    logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile", canary_edge, zone_name)
+                    logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile", previous_canary, zone_name)
                     canary_changed = True
 
                 if canary_edge:
