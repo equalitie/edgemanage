@@ -278,6 +278,7 @@ class EdgeManage(object):
                            "edge count - trying to add more edges"))
             edgelist_changed = True
 
+            # This loops over the non-canary edges
             for decision_edge, edge_state in self.decision.current_judgement.iteritems():
                 if decision_edge not in self.edgelist_obj.edges:
                     self.edgelist_obj.add_edge(decision_edge, state=edge_state)
