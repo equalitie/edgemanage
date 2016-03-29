@@ -404,13 +404,19 @@ class EdgeManage(object):
                     current_health = self.decision.get_judgement(edge)
                 self.state_obj.zone_mtimes = self.current_mtimes
 
-            if self.edgelist_obj.is_live(edge):
-                # Note in the statefile that this edge has been put into rotation
-                logging.debug("Setting %sedge %s to state in", "canary " if is_canary else "", edge)
-                self.edge_states[edge].add_rotation()
-                self.edge_states[edge].set_state("in")
+            if is_canary == False:
+                if self.edgelist_obj.is_live(edge):
+                    # Note in the statefile that this edge has been put into rotation
+                    logging.debug("Setting edge %s to state in", edge)
+                    self.edge_states[edge].add_rotation()
+                    self.edge_states[edge].set_state("in")
+                else:
+                    logging.debug("Setting edge %s to state out", edge)
+                    self.edge_states[edge].set_state("out")
             else:
-                logging.debug("Setting %sedge %s to state out", "canary " if is_canary else "", edge)
+                # Canaries are silently set to "out", because the state "in" implies a
+                # dnet-wise insertion, which doesn't make sense for canaries.
+                # There should probably be another state defined for canaries?
                 self.edge_states[edge].set_state("out")
 
         return any_changes or edgelist_changed
