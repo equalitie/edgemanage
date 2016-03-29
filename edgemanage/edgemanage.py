@@ -232,7 +232,7 @@ class EdgeManage(object):
         still_healthy_from_last_run = self.check_last_live()
 
         for edgename, edge_state in self.edge_states.iteritems():
-            if edge_state.mode == "force":
+            if edgename not in self.canary_data.values() and edge_state.mode == "force":
                 if self.decision.get_judgement(edgename) == "pass":
                     logging.debug(
                         "Making host %s live because it is in mode force and it is in state pass",
@@ -244,7 +244,7 @@ class EdgeManage(object):
                         self.edgelist_obj.add_edge(edgename, state="pass", live=True)
                         edgelist_changed = True
 
-            elif edge_state.mode == "blindforce":
+            elif edgename not in self.canary_data.values() and edge_state.mode == "blindforce":
                 logging.debug("Making host %s live because it is in mode blindforce.",
                               edgename)
                 self.edgelist_obj.add_edge(edgename, state="pass", live=True)
