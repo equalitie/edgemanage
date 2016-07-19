@@ -14,7 +14,8 @@ import requests
 requests_log = logging.getLogger("requests")
 requests_log.setLevel(logging.WARNING)
 
-USER_AGENT="Edgemanage v2 (https://github.com/equalitie/edgemanage)"
+USER_AGENT = "Edgemanage v2 (https://github.com/equalitie/edgemanage)"
+
 
 class FetchFailed(Exception):
     def __init__(self, edgetest, fetch_host, fetch_object, reason):
@@ -26,6 +27,7 @@ class FetchFailed(Exception):
         self.local_sum = edgetest.local_sum
         self.fetch_host = fetch_host
         self.fetch_object = fetch_object
+
 
 class VerifyFailed(Exception):
     def __init__(self, edgetest, fetch_host, fetch_object, reason):
@@ -61,8 +63,8 @@ class EdgeTest(object):
                                                      fetch_object),
                                     verify=verify,
                                     timeout=const.FETCH_TIMEOUT,
-                                    headers = {"Host": fetch_host,
-                                               "User-Agent": USER_AGENT})
+                                    headers={"Host": fetch_host,
+                                             "User-Agent": USER_AGENT})
         except requests.exceptions.Timeout as e:
             # Just assume it took the maximum amount of time
             return const.FETCH_TIMEOUT
@@ -75,7 +77,7 @@ class EdgeTest(object):
                                                              fetch_object),
                                             verify=False,
                                             timeout=const.FETCH_TIMEOUT,
-                                            headers = {"Host": fetch_host})
+                                            headers={"Host": fetch_host})
                     # Request was successful, stop retrying and
                     # continue
                     break

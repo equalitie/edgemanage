@@ -8,7 +8,7 @@ import os
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 
 try:
-    env = Environment(loader=PackageLoader('edgemanage','templates'))
+    env = Environment(loader=PackageLoader('edgemanage', 'templates'))
 except ImportError as e:
     # we're not installed as a module
     if os.path.exists("edgemanage/templates") and os.path.isdir("edgemanage/templates"):
@@ -17,6 +17,7 @@ except ImportError as e:
         env = Environment(loader=FileSystemLoader("templates"))
     else:
         raise
+
 
 class EdgeList(object):
     """ A class that represents a list of edges """
@@ -36,7 +37,7 @@ class EdgeList(object):
         return len(self.edges.keys())
 
     def get_state_stats(self):
-        counter = Counter([ edge["state"] for edge in self.edges.values() ])
+        counter = Counter([edge["state"] for edge in self.edges.values()])
         return dict(counter)
 
     def get_live_count(self):
@@ -85,7 +86,7 @@ class EdgeList(object):
     def get_edges(self, state=None):
         ''' return a list of edges, with the option to filter by state '''
         if state:
-            return [ edge for edge in self.edges if self.edges[edge]['state'] == state ]
+            return [edge for edge in self.edges if self.edges[edge]['state'] == state]
         else:
             return self.edges.keys()
 
@@ -99,7 +100,7 @@ class EdgeList(object):
                       serial_number=None, canary_edge=None):
         logging.debug("Started generating zone for %s", domain)
 
-        if not all([ i.endswith(".") for i in dns_config["ns_records"] ]):
+        if not all([i.endswith(".") for i in dns_config["ns_records"]]):
             raise Exception(("Nameserver list is incorrectly formatted. Every"
                              " entry should end with a full stop"))
 
@@ -117,18 +118,18 @@ class EdgeList(object):
             del(edge_list_to_write[removed_edge])
             edge_list_to_write.append(canary_edge)
 
-        #TODO cache looked up IP addresses, don't do this every time
+        # TODO: cache looked up IP addresses, don't do this every time
         live_edge_ips = []
         for live_edge in edge_list_to_write:
             try:
                 edge_ip = socket.gethostbyname(live_edge)
                 live_edge_ips.append(edge_ip)
-            except socket.gaierror as e:
+            except socket.gaierror:
                 try:
                     # Retry resolution failures
                     edge_ip = socket.gethostbyname(live_edge)
                     live_edge_ips.append(edge_ip)
-                except socket.gaierror as e:
+                except socket.gaierror:
                     logging.error(("Failed to resolve IP address for %s! Correct"
                                    " hostname or remove this IP address from rotation."),
                                   live_edge)
@@ -155,4 +156,3 @@ class EdgeList(object):
             soa_nameserver=dns_config["soa_nameserver"],
             nameservers=dns_config["ns_records"]
         )
-

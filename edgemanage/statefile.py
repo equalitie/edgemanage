@@ -1,6 +1,7 @@
 import json
 import time
 
+
 class StateFile(object):
 
     ''' A simple state storage object, a glorified dict '''
