@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from edgetest import EdgeTest, VerifyFailed, FetchFailed
-from edgestate import EdgeState
-from decisionmaker import DecisionMaker
-from edgelist import EdgeList
-from const import FETCH_TIMEOUT
+from .edgetest import EdgeTest, VerifyFailed, FetchFailed
+from .edgestate import EdgeState
+from .decisionmaker import DecisionMaker
+from .edgelist import EdgeList
+from .const import FETCH_TIMEOUT
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import glob

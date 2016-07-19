@@ -11,6 +11,7 @@ TEST_FETCH_HISTORY = 4
 # Patch edgestate's import of const
 edgemanage.edgestate.FETCH_HISTORY = TEST_FETCH_HISTORY
 
+
 class EdgeStateTest(unittest.TestCase):
 
     # TODO load test JSON file to ensure object creation
