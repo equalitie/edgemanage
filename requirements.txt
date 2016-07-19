@@ -1,6 +1,6 @@
-requests
-jinja2
-futures
-PyYAML
-setproctitle
-ipaddr
+futures==3.0.5
+ipaddr==2.1.11
+Jinja2==2.8
+PyYAML==3.11
+requests==2.10.0
+setproctitle==1.1.10
