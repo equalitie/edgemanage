@@ -1,11 +1,8 @@
-from const import DECISION_SLICE_WINDOW
-
 import logging
 import time
 from collections import Counter
 import random
 import socket
-import time
 import os
 
 from jinja2 import Environment, PackageLoader, FileSystemLoader
@@ -146,6 +143,8 @@ class EdgeList(object):
         if not serial_number:
             serial_number = int(time.time())
         template = env.get_template('zonetemplate.j2')
+        # pylint: disable=no-member
+        # ^ Fix for pylint bug - https://github.com/PyCQA/pylint/issues/490
         return template.render(
             zonefile=zonefile,
             domain=domain,
@@ -156,3 +155,4 @@ class EdgeList(object):
             soa_nameserver=dns_config["soa_nameserver"],
             nameservers=dns_config["ns_records"]
         )
+

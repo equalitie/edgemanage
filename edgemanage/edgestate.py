@@ -24,6 +24,10 @@ ASSUMED_VALS={
     "comment": "",
 }
 
+# ASSUMED_VALS is used to dynamically fill EdgeState attributes, we need
+# to disable pylint member checks as it one be able to check these attributes.
+# pylint: disable=no-member, access-member-before-definition
+
 class EdgeState(object):
 
     def __init__(self, edgename, store_dir, nowrite=False):
