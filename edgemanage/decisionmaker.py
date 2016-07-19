@@ -3,6 +3,7 @@ from const import DECISION_SLICE_WINDOW, VALID_HEALTHS, FETCH_TIMEOUT
 import logging
 import time
 
+
 class DecisionMaker(object):
 
     def __init__(self):
@@ -39,7 +40,8 @@ class DecisionMaker(object):
                               edge_state.current_average())
             else:
                 time_slice_avg = None
-                logging.debug("Analysing %s. Last val: %f, time slice: Not enough data, average: %f",
+                logging.debug("Analysing %s. Last val: %f, time slice: Not enough data, "
+                              "average: %f",
                               edgename, edge_state.last_value(), edge_state.current_average())
 
             if edge_state.last_value() < good_enough:
@@ -56,11 +58,14 @@ class DecisionMaker(object):
             elif time_slice and time_slice_avg < good_enough:
                 self.current_judgement[edgename] = "pass_window"
                 results_dict["pass_window"] += 1
-                logging.info("UNSURE: Last fetch for %s is NOT under the threshold but the average of the last %d items is (%f < %f)", edgename, len(time_slice), time_slice_avg, good_enough)
+                logging.info("UNSURE: Last fetch for %s is NOT under the threshold but the "
+                             "average of the last %d items is (%f < %f)",
+                             edgename, len(time_slice), time_slice_avg, good_enough)
             elif edge_state.current_average() < good_enough:
                 results_dict["pass_average"] += 1
                 self.current_judgement[edgename] = "pass_average"
-                logging.info("UNSURE: Last fetch for %s is NOT under the threshold but under the average (%f < %f)",
+                logging.info("UNSURE: Last fetch for %s is NOT under the threshold but under "
+                             "the average (%f < %f)",
                              edgename, edge_state.current_average(), good_enough)
             else:
                 results_dict["fail"] += 1

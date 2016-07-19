@@ -1,5 +1,6 @@
 import fcntl
 
+
 def acquire_lock(lockfile):
     # lockfile should be an opened file in mode w
 

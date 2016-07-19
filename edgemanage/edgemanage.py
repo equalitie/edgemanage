@@ -22,16 +22,16 @@ def future_fetch(edgetest, testobject_host, testobject_path,
     try:
         fetch_result = edgetest.fetch(testobject_host, testobject_path,
                                       testobject_proto, testobject_verify)
-    except VerifyFailed as exc:
+    except VerifyFailed:
         # Ensure that we don't use hosts where verification has failed
         fetch_result = FETCH_TIMEOUT
         fetch_status = "verify_failed"
-    except FetchFailed as exc:
+    except FetchFailed:
         # Ensure that we don't use hosts where fetching the object has
         # caused a HTTP error
         fetch_result = FETCH_TIMEOUT
         fetch_status = "fetch_failed"
-    except Exception as exc:
+    except Exception:
         logging.error("Uncaught exception in fetch! %s", traceback.format_exc())
     return {edgetest.edgename: (fetch_result, fetch_status)}
 
@@ -137,7 +137,7 @@ class EdgeManage(object):
         for f in as_completed(edgescore_futures):
             try:
                 result = f.result()
-            except Exception as e:
+            except Exception:
                 # Do some shit here
                 raise
             edge, value = result.items()[0]
@@ -182,7 +182,7 @@ class EdgeManage(object):
                     oldlive_health = self.canary_decision.get_judgement(oldlive_edge)
                 else:
                     oldlive_health = self.decision.get_judgement(oldlive_edge)
-            except KeyError as exc:
+            except KeyError:
                 oldlive_health = None
 
             if oldlive_edge in self.decision.current_judgement and oldlive_health == "pass":
@@ -240,7 +240,7 @@ class EdgeManage(object):
 
                     # Don't set edgelist_changed to True if we're
                     # already healthy and live
-                    if not edgename in still_healthy_from_last_run:
+                    if edgename not in still_healthy_from_last_run:
                         self.edgelist_obj.add_edge(edgename, state="pass", live=True)
                         edgelist_changed = True
 
@@ -260,7 +260,7 @@ class EdgeManage(object):
         if still_healthy_from_last_run:
             logging.info("Got list of previously in use edges that are in a passing state: %s",
                          still_healthy_from_last_run)
-            if edgelist_changed == None:
+            if edgelist_changed is None:
                 # This check is to ensure that a previously-passing
                 # list doesn't ignore forced or blindforced edges.
                 edgelist_changed = False
@@ -331,23 +331,27 @@ class EdgeManage(object):
                             ("Zone %s has %s configued as a canary but it is "
                              "in state %s so it will not be used. "),
                             zone_name, canary_ip, canary_health)
-                   
+
                     # Is the canary different from the one used before?
                     # Will we need to re-write zonefile?
                     if not previous_canary and canary_edge:
-                        logging.info ("Canary edge %s for zone %s is new: re-writing zonefile", canary_edge, zone_name)
+                        logging.info("Canary edge %s for zone %s is new: re-writing zonefile",
+                                     canary_edge, zone_name)
                         canary_changed = True
                     elif not canary_edge and previous_canary:
-                        logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile", previous_canary, zone_name)
+                        logging.info("Canary edge %s for zone %s not used anymore: re-writing "
+                                     "zonefile", previous_canary, zone_name)
                         canary_changed = True
                     elif canary_edge != previous_canary:
-                        logging.info ("Canary edge for zone %s changed from %s to %s: re-writing zonefile", zone_name, previous_canary, canary_edge)
+                        logging.info("Canary edge for zone %s changed from %s to %s: re-writing "
+                                     "zonefile", zone_name, previous_canary, canary_edge)
                         canary_changed = True
 
                 elif previous_canary:
                     # We used to have a canary for the domain, but it is not
                     # configured anymore: we'll just need to re-write zonefile
-                    logging.info ("Canary edge %s for zone %s not used anymore: re-writing zonefile", previous_canary, zone_name)
+                    logging.info("Canary edge %s for zone %s not used anymore: re-writing "
+                                 "zonefile", previous_canary, zone_name)
                     canary_changed = True
 
                 if canary_edge:
@@ -360,7 +364,8 @@ class EdgeManage(object):
                 # * Write out zone files we haven't seen before
                 # * don't write out updated zone files when we aren't changing edge list
                 old_mtime = self.state_obj.zone_mtimes.get(zone_name)
-                if not force_update and not edgelist_changed and not canary_changed and old_mtime and old_mtime == self.current_mtimes[zone_name]:
+                if (not force_update and not edgelist_changed and not canary_changed and
+                        old_mtime and old_mtime == self.current_mtimes[zone_name]):
                     logging.info("Not writing zonefile for %s because there are no changes pending",
                                  zone_name)
                     continue
@@ -374,7 +379,7 @@ class EdgeManage(object):
 
                 complete_zone_path = os.path.join(self.config["named_dir"],
                                                   "%s.zone" % zone_name)
-                #TODO add rotation of old files
+                # TODO: add rotation of old files
                 if not self.dry_run:
                     with open(complete_zone_path, "w") as complete_zone_f:
                         logging.debug("Writing completed zone file for %s to %s",
@@ -384,7 +389,6 @@ class EdgeManage(object):
                     logging.debug(("In dry run so not writing file %s for zone %s. "
                                    "It would have contained:\n%s"),
                                   complete_zone_path, zone_name, complete_zone_str)
-
 
         else:
             logging.error("Couldn't establish full edge list! Only have %d edges (%s), need %d",
@@ -398,13 +402,13 @@ class EdgeManage(object):
             if self.edge_states[edge].mode != "unavailable":
                 if edge in self.canary_data.values():
                     is_canary = True
-                    current_health = self.canary_decision.get_judgement(edge)
+                    # current_health = self.canary_decision.get_judgement(edge)
                 else:
                     is_canary = False
-                    current_health = self.decision.get_judgement(edge)
+                    # current_health = self.decision.get_judgement(edge)
                 self.state_obj.zone_mtimes = self.current_mtimes
 
-            if is_canary == False:
+            if is_canary is False:
                 if self.edgelist_obj.is_live(edge):
                     # Note in the statefile that this edge has been put into rotation
                     logging.debug("Setting edge %s to state in", edge)
