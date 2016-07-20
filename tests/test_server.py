@@ -99,8 +99,8 @@ def is_valid_file(filename):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=
-        'Run slow web servers for testing EdgeManage under conditions '
+    parser = argparse.ArgumentParser(
+        description='Run slow web servers for testing EdgeManage under conditions '
         'of high network load and poor edge availability.'
     )
     parser.add_argument('--edge-config', type=is_valid_file,
@@ -112,6 +112,11 @@ if __name__ == "__main__":
                         help='Test file to server from the edge / canary '
                         '(default: %(default)s).')
     args = parser.parse_args()
+    # class Args:
+    #     edge_config = 'test_data/test_edge_config.yaml'
+    #     test_object = 'test_data/edge_test_object.txt'
+
+    # args = Args()
 
     with open(args.edge_config) as config_file:
         config = yaml.safe_load(config_file.read())
