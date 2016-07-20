@@ -45,6 +45,9 @@ edgelist_dir: /etc/edgemanage/edges/
 # performed in a 10 minute period
 dnschange_maxfreq: 10
 
+# Number of connections to make in parallel to the edges and canaries
+workers: 10
+
 # Number of retries when fetching the object from an edge
 retry: 3
 
