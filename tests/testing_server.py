@@ -104,7 +104,7 @@ if __name__ == "__main__":
         'of high network load and poor edge availability.'
     )
     parser.add_argument('--edge-config', type=is_valid_file,
-                        default='test_data/test_edge_config.yaml',
+                        default='test_server_configs/default.yaml',
                         help='YAML file describing the test edges and their delays '
                         '(default: %(default)s).')
     parser.add_argument('--test-object', type=is_valid_file,
@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
     with open(args.edge_config) as config_file:
         config = yaml.safe_load(config_file.read())
-        logger.info("Loaded %d edges from config '%s'.",
+        logger.info("Loaded %d edges/canaries from config '%s'.",
                     len(config['edge_list']), args.edge_config)
 
     # Monkeypatch WSGI to allow rejecting connections early at the socket level.
