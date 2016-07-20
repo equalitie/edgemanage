@@ -112,11 +112,6 @@ if __name__ == "__main__":
                         help='Test file to server from the edge / canary '
                         '(default: %(default)s).')
     args = parser.parse_args()
-    # class Args:
-    #     edge_config = 'test_data/test_edge_config.yaml'
-    #     test_object = 'test_data/edge_test_object.txt'
-
-    # args = Args()
 
     with open(args.edge_config) as config_file:
         config = yaml.safe_load(config_file.read())
@@ -128,4 +123,6 @@ if __name__ == "__main__":
 
     app.config['EDGES'] = config['edge_list']
     app.config['TEST_OBJECT'] = args.test_object
+
+    logger.info("Test server running")
     app.run(host='0.0.0.0', threaded=True)

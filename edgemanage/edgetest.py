@@ -53,14 +53,15 @@ class EdgeTest(object):
         self.edgename = edgename
         self.local_sum = local_sum
 
-    def fetch(self, fetch_host, fetch_object, proto="https", verify=False):
+    def fetch(self, fetch_host, fetch_object, proto="https", port=80, verify=False):
         """
          fetch_host: The Host header to use when fetching
          fetch_object: The path to the object to be fetched
         """
         try:
-            response = requests.get(urlparse.urljoin(proto + "://" + self.edgename,
-                                                     fetch_object),
+            request_url = urlparse.urljoin(proto + "://" + self.edgename + ':' + str(port),
+                                           fetch_object)
+            response = requests.get(request_url,
                                     verify=verify,
                                     timeout=const.FETCH_TIMEOUT,
                                     headers={"Host": fetch_host,
@@ -73,8 +74,7 @@ class EdgeTest(object):
             for i in range(const.FETCH_RETRY-1):
                 logging.warning("Retrying connection to %s", self.edgename)
                 try:
-                    response = requests.get(urlparse.urljoin(proto + "://" + self.edgename,
-                                                             fetch_object),
+                    response = requests.get(request_url,
                                             verify=False,
                                             timeout=const.FETCH_TIMEOUT,
                                             headers={"Host": fetch_host})
@@ -92,7 +92,7 @@ class EdgeTest(object):
                 return const.FETCH_TIMEOUT
 
         if not response.ok:
-            logging.error("Object fetch failed on %s", self.edgename)
+            logging.error("Object fetch failed on %s:%s", self.edgename, port)
             raise FetchFailed(self, fetch_host,
                               fetch_object, response.text)
 

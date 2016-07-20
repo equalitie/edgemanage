@@ -15,13 +15,14 @@ import os
 
 
 def future_fetch(edgetest, testobject_host, testobject_path,
-                 testobject_proto, testobject_verify):
+                 testobject_proto, testobject_port, testobject_verify):
     """Helper function to give us a return value that plays nice with as_completed"""
 
     fetch_status = None
     try:
         fetch_result = edgetest.fetch(testobject_host, testobject_path,
-                                      testobject_proto, testobject_verify)
+                                      testobject_proto, testobject_port,
+                                      testobject_verify)
     except VerifyFailed:
         # Ensure that we don't use hosts where verification has failed
         fetch_result = FETCH_TIMEOUT
@@ -113,23 +114,31 @@ class EdgeManage(object):
         test_host = test_dict["host"]
         test_path = test_dict["uri"]
         test_proto = test_dict["proto"]
+        test_port = test_dict.get("port", 80)
         test_verify = test_dict["verify"]
 
         edgescore_futures = []
         with ProcessPoolExecutor() as executor:
             for edgename in self.edge_states:
+                # Send raw IP as the host header when in the testing environment
+                if test_dict.get("testing"):
+                    test_host = edgename
                 edge_t = EdgeTest(edgename, self.testobject_hash)
                 edgescore_futures.append(executor.submit(future_fetch,
                                                          edge_t, test_host,
                                                          test_path,
                                                          test_proto,
+                                                         test_port,
                                                          test_verify))
             for canaryname in self.canary_data.values():
+                if test_dict.get("testing"):
+                    test_host = edgename
                 edge_t = EdgeTest(canaryname, self.testobject_hash)
                 edgescore_futures.append(executor.submit(future_fetch,
                                                          edge_t, test_host,
                                                          test_path,
                                                          test_proto,
+                                                         test_port,
                                                          test_verify))
 
         verification_failues = []

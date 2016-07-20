@@ -3,6 +3,8 @@ testobject:
   # The domain to query for the object - used to set the Host header
   # in the GETs
   host: site.com
+  # Port
+  port: 80
   # Query over HTTP or HTTPS?
   proto: https
   # Path to the object to be retrieved
