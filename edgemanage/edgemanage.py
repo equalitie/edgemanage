@@ -132,7 +132,7 @@ class EdgeManage(object):
                                                          test_verify))
             for canaryname in self.canary_data.values():
                 if test_dict.get("testing"):
-                    test_host = edgename
+                    test_host = canaryname
                 edge_t = EdgeTest(canaryname, self.testobject_hash)
                 edgescore_futures.append(executor.submit(future_fetch,
                                                          edge_t, test_host,
