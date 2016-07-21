@@ -414,11 +414,12 @@ class EdgeManage(object):
             if self.edge_states[edge].mode != "unavailable":
                 if edge in self.canary_data.values():
                     is_canary = True
-                    # current_health = self.canary_decision.get_judgement(edge)
+                    current_health = self.canary_decision.get_judgement(edge)
                 else:
                     is_canary = False
-                    # current_health = self.decision.get_judgement(edge)
-                self.state_obj.zone_mtimes = self.current_mtimes
+                    current_health = self.decision.get_judgement(edge)
+
+                self.edge_states[edge].set_health(current_health)
 
             if is_canary is False:
                 if self.edgelist_obj.is_live(edge):
@@ -434,5 +435,7 @@ class EdgeManage(object):
                 # dnet-wise insertion, which doesn't make sense for canaries.
                 # There should probably be another state defined for canaries?
                 self.edge_states[edge].set_state("out")
+
+        self.state_obj.zone_mtimes = self.current_mtimes
 
         return any_changes or edgelist_changed
