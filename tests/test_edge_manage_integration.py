@@ -22,7 +22,7 @@ class EdgeManageIntegration(unittest.TestCase):
     def setUp(self):
         self.edge_data_dir = tempfile.mkdtemp()
 
-    def rewrite_default_config(self, num_edges=20, num_canaries=20):
+    def rewrite_default_config(self, options=None, num_edges=20, num_canaries=20):
         """
         Rewrite the default config file to use this test environment.
         """
@@ -37,7 +37,7 @@ class EdgeManageIntegration(unittest.TestCase):
 
         # Set testing flag in integration tests, this will cause the raw IP to be sent
         # in the Host header so it can be read by the testng web server.
-        config['testobject']['testing'] = True
+        config['testing'] = True
 
         config['healthdata_store'] = os.path.join(self.edge_data_dir, 'health')
         os.mkdir(config['healthdata_store'])
@@ -65,6 +65,10 @@ class EdgeManageIntegration(unittest.TestCase):
         config['lockfile'] = '%s/edgemanage.lock' % self.edge_data_dir
         del config['commands']['run_after_changes']
         del config['commands']['run_after']
+
+        # Override config with custom options
+        if options:
+            config.update(options)
 
         # Write modified config to a file
         new_config_filename = os.path.join(self.edge_data_dir, 'edgemanage.conf')
@@ -115,9 +119,11 @@ class EdgeManageIntegration(unittest.TestCase):
             edge_manage_command.append('--verbose')
 
         # Run and wait for command to finish
-        output, exit_status = pexpect.run(' '.join(edge_manage_command), withexitstatus=True)
-        self.assertEqual(exit_status, 0)
-        return output
+        em_process = pexpect.spawn(' '.join(edge_manage_command), timeout=60)
+        em_process.expect(pexpect.EOF)
+        em_process.close()
+        self.assertEqual(em_process.exitstatus, 0)
+        return em_process.before
 
     def test20Edges20CanariesAllFast(self):
         """

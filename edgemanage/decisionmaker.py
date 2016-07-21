@@ -1,4 +1,4 @@
-from const import DECISION_SLICE_WINDOW, VALID_HEALTHS, FETCH_TIMEOUT
+import const
 
 import logging
 import time
@@ -28,11 +28,11 @@ class DecisionMaker(object):
 
         # dict for stats to return
         results_dict = {}
-        for statusname in VALID_HEALTHS:
+        for statusname in const.VALID_HEALTHS:
             results_dict[statusname] = 0
 
         for edgename, edge_state in self.edge_states.iteritems():
-            time_slice = edge_state[time.time() - DECISION_SLICE_WINDOW:time.time()]
+            time_slice = edge_state[time.time() - const.DECISION_SLICE_WINDOW:time.time()]
             if time_slice:
                 time_slice_avg = sum(time_slice)/len(time_slice)
                 logging.debug("Analysing %s. Last val: %f, time slice: %f, average: %f",
@@ -49,12 +49,12 @@ class DecisionMaker(object):
                              edge_state.last_value(), good_enough)
                 self.current_judgement[edgename] = "pass"
                 results_dict["pass"] += 1
-            elif edge_state.last_value() == FETCH_TIMEOUT:
+            elif edge_state.last_value() == const.FETCH_TIMEOUT:
                 results_dict["fail"] += 1
                 self.current_judgement[edgename] = "fail"
                 logging.info(("FAIL: Fetch time for %s is equal to the FETCH_TIMEOUT of %d. "
                               "Automatic fail"),
-                             edgename, FETCH_TIMEOUT)
+                             edgename, const.FETCH_TIMEOUT)
             elif time_slice and time_slice_avg < good_enough:
                 self.current_judgement[edgename] = "pass_window"
                 results_dict["pass_window"] += 1

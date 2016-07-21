@@ -4,7 +4,7 @@ from .edgetest import EdgeTest, VerifyFailed, FetchFailed
 from .edgestate import EdgeState
 from .decisionmaker import DecisionMaker
 from .edgelist import EdgeList
-from .const import FETCH_TIMEOUT
+import const
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import glob
@@ -25,12 +25,12 @@ def future_fetch(edgetest, testobject_host, testobject_path,
                                       testobject_verify)
     except VerifyFailed:
         # Ensure that we don't use hosts where verification has failed
-        fetch_result = FETCH_TIMEOUT
+        fetch_result = const.FETCH_TIMEOUT
         fetch_status = "verify_failed"
     except FetchFailed:
         # Ensure that we don't use hosts where fetching the object has
         # caused a HTTP error
-        fetch_result = FETCH_TIMEOUT
+        fetch_result = const.FETCH_TIMEOUT
         fetch_status = "fetch_failed"
     except Exception:
         logging.error("Uncaught exception in fetch! %s", traceback.format_exc())
@@ -116,12 +116,15 @@ class EdgeManage(object):
         test_proto = test_dict["proto"]
         test_port = test_dict.get("port", 80)
         test_verify = test_dict["verify"]
+        if self.config.get("testing"):
+            # Allow FETCH_TIMEOUT to be overridden in TESTING mode.
+            const.FETCH_TIMEOUT = self.config.get("timeout") or const.FETCH_TIMEOUT
 
         edgescore_futures = []
         with ProcessPoolExecutor() as executor:
             for edgename in self.edge_states:
                 # Send raw IP as the host header when in the testing environment
-                if test_dict.get("testing"):
+                if self.config.get("testing"):
                     test_host = edgename
                 edge_t = EdgeTest(edgename, self.testobject_hash)
                 edgescore_futures.append(executor.submit(future_fetch,
@@ -131,7 +134,7 @@ class EdgeManage(object):
                                                          test_port,
                                                          test_verify))
             for canaryname in self.canary_data.values():
-                if test_dict.get("testing"):
+                if self.config.get("testing"):
                     test_host = canaryname
                 edge_t = EdgeTest(canaryname, self.testobject_hash)
                 edgescore_futures.append(executor.submit(future_fetch,
