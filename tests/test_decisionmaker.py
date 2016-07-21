@@ -4,26 +4,26 @@ import unittest
 
 from .context import edgemanage
 
-import test_edgestate
+from test_edgestate import EdgeStateTemplate
 
 TEST_EDGE = "testedge1"
 GOOD_ENOUGH = 1.0
 
 
-class DecisionMakerTest(unittest.TestCase):
+class DecisionMakerTest(EdgeStateTemplate):
 
     def _get_failing_edge_state(self):
-        es = test_edgestate.EdgeStateTest._make_store()
+        es = self._make_store()
         es.add_value(GOOD_ENOUGH * 2)
         return es
 
     def _get_passing_edge_state(self):
-        es = test_edgestate.EdgeStateTest._make_store()
+        es = self._make_store()
         es.add_value(GOOD_ENOUGH/10)
         return es
 
     def _get_error_edge_state(self):
-        es = test_edgestate.EdgeStateTest._make_store()
+        es = self._make_store()
         es.add_value(edgemanage.const.FETCH_TIMEOUT)
         return es
 

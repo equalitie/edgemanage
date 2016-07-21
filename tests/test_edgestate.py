@@ -2,6 +2,7 @@
 
 import unittest
 import tempfile
+import shutil
 import time
 
 from .context import edgemanage
@@ -12,16 +13,22 @@ TEST_FETCH_HISTORY = 4
 edgemanage.edgestate.FETCH_HISTORY = TEST_FETCH_HISTORY
 
 
-class EdgeStateTest(unittest.TestCase):
-
-    # TODO load test JSON file to ensure object creation
-
-    @staticmethod
-    def _make_store():
-        store_dir = tempfile.mkdtemp()
-        a = edgemanage.edgestate.EdgeState(TEST_EDGE, store_dir)
+class EdgeStateTemplate(unittest.TestCase):
+    """
+    Sub-classable test to handle state file generation and cleanup
+    """
+    def _make_store(self):
+        self.store_dir = tempfile.mkdtemp()
+        a = edgemanage.edgestate.EdgeState(TEST_EDGE, self.store_dir)
         return a
 
+    def tearDown(self):
+        shutil.rmtree(self.store_dir)
+
+
+class EdgeStateTest(EdgeStateTemplate):
+
+    # TODO load test JSON file to ensure object creation
     def testStoreAverage(self):
         a = self._make_store()
 
