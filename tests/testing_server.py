@@ -65,7 +65,8 @@ def serve_test_object():
         return Response('404: {} is not a valid edge ID'.format(edge_id)), 404
 
     delay = edge.get('delay', 0)
-    logger.info("Serving edge %d after a %d second delay", edge_id, delay)
+    name = 'edge' if edge_id <= 100 else 'canary'
+    logger.info("Serving %s %d after a %d second delay", name, edge_id, delay)
 
     time.sleep(delay)
     return send_file(app.config['TEST_OBJECT'])
