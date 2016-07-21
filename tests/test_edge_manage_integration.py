@@ -152,7 +152,7 @@ class EdgeManageIntegration(unittest.TestCase):
 
         health_data = self.load_all_health_files()
         self.assertEqual(len(health_data), 40)
-        self.assertTrue(all([edge['health'] for edge in health_data.values()]))
+        self.assertTrue(all([edge['health'] == "pass" for edge in health_data.values()]))
 
     def test20Edges20CanariesAll3Seconds(self):
         """
@@ -173,7 +173,7 @@ class EdgeManageIntegration(unittest.TestCase):
 
         # Confirm that all edges were not healthy
         health_data = self.load_all_health_files()
-        self.assertTrue(not any([edge['health'] for edge in health_data.values()]))
+        self.assertTrue(all([edge['health'] == "fail" for edge in health_data.values()]))
 
     def tearDown(self):
         # Stop the Flask server
