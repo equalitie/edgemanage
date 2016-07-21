@@ -6,6 +6,7 @@ import unittest
 import tempfile
 import yaml
 import logging
+import pdb
 
 import pexpect
 
@@ -96,6 +97,13 @@ class EdgeManageIntegration(unittest.TestCase):
                 }
         return health_data
 
+    def load_state_file(self):
+        """
+        Parse the state file generate by edge_manage
+        """
+        with open('%s/%s.state' % (self.edge_data_dir, DNET_NAME), 'r') as state_file:
+            return yaml.load(state_file.read())
+
     def spawn_web_server(self, config_file=None, test_object=None):
         """
         Spawn a Flask testing server and wait for it to be ready.
@@ -123,21 +131,49 @@ class EdgeManageIntegration(unittest.TestCase):
         em_process.expect(pexpect.EOF)
         em_process.close()
         self.assertEqual(em_process.exitstatus, 0)
+
+        if debug:
+            # output = '\n'.join(em_process.before.split('\r\n'))
+            pdb.set_trace()
         return em_process.before
 
     def test20Edges20CanariesAllFast(self):
         """
-        Run edge_manage against fast edges and canaries.
+        Run edge_manage against fast edges and canaries, all should be healthy.
         """
         self.spawn_web_server('test_server_configs/20-edge-20-canaries-all-fast.yaml')
         config_path = self.rewrite_default_config(num_edges=20, num_canaries=20)
 
-        # Run edge_manage and check exit status
+        # Run edge_manage
         self.run_edge_manage(config_path)
+
+        state_data = self.load_state_file()
+        self.assertTrue(len(state_data['last_live']), 4)
 
         health_data = self.load_all_health_files()
         self.assertEqual(len(health_data), 40)
         self.assertTrue(all([edge['health'] for edge in health_data.values()]))
+
+    def test20Edges20CanariesAll3Seconds(self):
+        """
+        Run edge_manage against slow edges and canaries which take 3 seconds
+        to respond. The request timeout is set to 2 seconds to make this test
+        run faster.
+
+        All edges and canaries should timeout and be set as unavailable.
+        """
+        self.spawn_web_server('test_server_configs/20-edge-20-canaries-all-3-seconds.yaml')
+        custom_options = {'timeout': 2}
+        config_path = self.rewrite_default_config(options=custom_options,
+                                                  num_edges=20, num_canaries=20)
+
+        self.run_edge_manage(config_path)
+        state_data = self.load_state_file()
+        self.assertEqual(len(state_data['last_live']), 0)
+
+        # Confirm that all edges were not healthy
+        health_data = self.load_all_health_files()
+        self.assertTrue(not any([edge['health'] for edge in health_data.values()]))
 
     def tearDown(self):
         # Stop the Flask server
