@@ -6,7 +6,7 @@ from .decisionmaker import DecisionMaker
 from .edgelist import EdgeList
 from .const import FETCH_TIMEOUT
 
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import glob
 import traceback
 import hashlib
@@ -116,7 +116,7 @@ class EdgeManage(object):
         test_verify = test_dict["verify"]
 
         edgescore_futures = []
-        with ProcessPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=self.config["workers"]) as executor:
             for edgename in self.edge_states:
                 edge_t = EdgeTest(edgename, self.testobject_hash)
                 edgescore_futures.append(executor.submit(future_fetch,
