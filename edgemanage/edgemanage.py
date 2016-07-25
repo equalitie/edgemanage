@@ -7,6 +7,7 @@ from .edgelist import EdgeList
 import const
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import itertools
 import glob
 import traceback
 import hashlib
@@ -121,32 +122,31 @@ class EdgeManage(object):
             const.FETCH_TIMEOUT = self.config.get("timeout") or const.FETCH_TIMEOUT
 
         edgescore_futures = []
+        canary_futures = []
         with ThreadPoolExecutor(max_workers=self.config["workers"]) as executor:
             for edgename in self.edge_states:
                 # Send raw IP as the host header when in the testing environment
                 if self.config.get("testing"):
                     test_host = edgename
+
                 edge_t = EdgeTest(edgename, self.testobject_hash)
-                edgescore_futures.append(executor.submit(future_fetch,
-                                                         edge_t, test_host,
-                                                         test_path,
-                                                         test_proto,
-                                                         test_port,
-                                                         test_verify))
-            for canaryname in self.canary_data.values():
-                if self.config.get("testing"):
-                    test_host = canaryname
-                edge_t = EdgeTest(canaryname, self.testobject_hash)
-                edgescore_futures.append(executor.submit(future_fetch,
-                                                         edge_t, test_host,
-                                                         test_path,
-                                                         test_proto,
-                                                         test_port,
-                                                         test_verify))
+                edgetest_future = executor.submit(future_fetch,
+                                                  edge_t, test_host,
+                                                  test_path,
+                                                  test_proto,
+                                                  test_port,
+                                                  test_verify)
+
+                # Check if the current edge is a canary edge
+                if edgename not in self.canary_data.values():
+                    edgescore_futures.append(edgetest_future)
+                else:
+                    canary_futures.append(edgetest_future)
 
         verification_failues = []
 
-        for f in as_completed(edgescore_futures):
+        # Iterate over the results of both Futures lists
+        for f in as_completed(itertools.chain(edgescore_futures, canary_futures)):
             try:
                 result = f.result()
             except Exception:
