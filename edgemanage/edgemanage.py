@@ -123,6 +123,7 @@ class EdgeManage(object):
 
         edgescore_futures = []
         canary_futures = []
+        verification_failues = []
         with ThreadPoolExecutor(max_workers=self.config["workers"]) as executor:
             for edgename in self.edge_states:
                 # Send raw IP as the host header when in the testing environment
@@ -143,35 +144,33 @@ class EdgeManage(object):
                 else:
                     canary_futures.append(edgetest_future)
 
-        verification_failues = []
+            # Iterate over the results of both Futures lists
+            for f in as_completed(itertools.chain(edgescore_futures, canary_futures)):
+                try:
+                    result = f.result()
+                except Exception:
+                    # Do some shit here
+                    raise
+                edge, value = result.items()[0]
+                fetch_result, fetch_status = value
 
-        # Iterate over the results of both Futures lists
-        for f in as_completed(itertools.chain(edgescore_futures, canary_futures)):
-            try:
-                result = f.result()
-            except Exception:
-                # Do some shit here
-                raise
-            edge, value = result.items()[0]
-            fetch_result, fetch_status = value
+                if fetch_status == "verify_failed":
+                    verification_failues.append(edge)
 
-            if fetch_status == "verify_failed":
-                verification_failues.append(edge)
+                self.edge_states[edge].add_value(fetch_result)
+                logging.info("Fetch time for %s: %f avg: %f",
+                             edge, fetch_result,
+                             self.edge_states[edge].current_average())
 
-            self.edge_states[edge].add_value(fetch_result)
-            logging.info("Fetch time for %s: %f avg: %f",
-                         edge, fetch_result,
-                         self.edge_states[edge].current_average())
-
-            # Skip edges that we have forced out of commission
-            if self.edge_states[edge].mode == "unavailable":
-                logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
-            else:
-                # otherwise add it to the appropriate decision maker
-                if edge in self.canary_data.values():
-                    self.canary_decision.add_edge_state(self.edge_states[edge])
-                elif edge in self.edge_states:
-                    self.decision.add_edge_state(self.edge_states[edge])
+                # Skip edges that we have forced out of commission
+                if self.edge_states[edge].mode == "unavailable":
+                    logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
+                else:
+                    # otherwise add it to the appropriate decision maker
+                    if edge in self.canary_data.values():
+                        self.canary_decision.add_edge_state(self.edge_states[edge])
+                    elif edge in self.edge_states:
+                        self.decision.add_edge_state(self.edge_states[edge])
 
         return verification_failues
 
