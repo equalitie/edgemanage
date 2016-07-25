@@ -7,6 +7,7 @@ import tempfile
 import yaml
 import logging
 import pdb
+import time
 
 import pexpect
 
@@ -127,10 +128,12 @@ class EdgeManageIntegration(unittest.TestCase):
             edge_manage_command.append('--verbose')
 
         # Run and wait for command to finish
+        start_time = time.time()
         em_process = pexpect.spawn(' '.join(edge_manage_command), timeout=60)
         em_process.expect(pexpect.EOF)
         em_process.close()
         self.assertEqual(em_process.exitstatus, 0)
+        self.running_time = time.time() - start_time
 
         if debug:
             # output = '\n'.join(em_process.before.split('\r\n'))
@@ -153,6 +156,7 @@ class EdgeManageIntegration(unittest.TestCase):
         health_data = self.load_all_health_files()
         self.assertEqual(len(health_data), 40)
         self.assertTrue(all([edge['health'] == "pass" for edge in health_data.values()]))
+        self.assertLess(self.running_time, 1)
 
     def test20Edges20CanariesAll3Seconds(self):
         """
@@ -174,6 +178,7 @@ class EdgeManageIntegration(unittest.TestCase):
         # Confirm that all edges were not healthy
         health_data = self.load_all_health_files()
         self.assertTrue(all([edge['health'] == "fail" for edge in health_data.values()]))
+        self.assertLess(self.running_time, 10)
 
     def test20Edges20CanariesCanaryKiller(self):
         """
@@ -194,6 +199,7 @@ class EdgeManageIntegration(unittest.TestCase):
         failed_edges = [edge for edge in health_data.values() if edge['health'] == "fail"]
         self.assertTrue(len(health_data), 20)
         self.assertTrue(len(failed_edges), 15)
+        self.assertLess(self.running_time, 5)
 
     def tearDown(self):
         # Stop the Flask server
