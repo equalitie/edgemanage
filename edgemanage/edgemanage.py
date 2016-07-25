@@ -4,7 +4,7 @@ from .edgetest import EdgeTest, VerifyFailed, FetchFailed
 from .edgestate import EdgeState
 from .decisionmaker import DecisionMaker
 from .edgelist import EdgeList
-from .const import FETCH_TIMEOUT
+import const
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import glob
@@ -15,21 +15,22 @@ import os
 
 
 def future_fetch(edgetest, testobject_host, testobject_path,
-                 testobject_proto, testobject_verify):
+                 testobject_proto, testobject_port, testobject_verify):
     """Helper function to give us a return value that plays nice with as_completed"""
 
     fetch_status = None
     try:
         fetch_result = edgetest.fetch(testobject_host, testobject_path,
-                                      testobject_proto, testobject_verify)
+                                      testobject_proto, testobject_port,
+                                      testobject_verify)
     except VerifyFailed:
         # Ensure that we don't use hosts where verification has failed
-        fetch_result = FETCH_TIMEOUT
+        fetch_result = const.FETCH_TIMEOUT
         fetch_status = "verify_failed"
     except FetchFailed:
         # Ensure that we don't use hosts where fetching the object has
         # caused a HTTP error
-        fetch_result = FETCH_TIMEOUT
+        fetch_result = const.FETCH_TIMEOUT
         fetch_status = "fetch_failed"
     except Exception:
         logging.error("Uncaught exception in fetch! %s", traceback.format_exc())
@@ -113,23 +114,34 @@ class EdgeManage(object):
         test_host = test_dict["host"]
         test_path = test_dict["uri"]
         test_proto = test_dict["proto"]
+        test_port = test_dict.get("port", 80)
         test_verify = test_dict["verify"]
+        if self.config.get("testing"):
+            # Allow FETCH_TIMEOUT to be overridden in TESTING mode.
+            const.FETCH_TIMEOUT = self.config.get("timeout") or const.FETCH_TIMEOUT
 
         edgescore_futures = []
         with ThreadPoolExecutor(max_workers=self.config["workers"]) as executor:
             for edgename in self.edge_states:
+                # Send raw IP as the host header when in the testing environment
+                if self.config.get("testing"):
+                    test_host = edgename
                 edge_t = EdgeTest(edgename, self.testobject_hash)
                 edgescore_futures.append(executor.submit(future_fetch,
                                                          edge_t, test_host,
                                                          test_path,
                                                          test_proto,
+                                                         test_port,
                                                          test_verify))
             for canaryname in self.canary_data.values():
+                if self.config.get("testing"):
+                    test_host = canaryname
                 edge_t = EdgeTest(canaryname, self.testobject_hash)
                 edgescore_futures.append(executor.submit(future_fetch,
                                                          edge_t, test_host,
                                                          test_path,
                                                          test_proto,
+                                                         test_port,
                                                          test_verify))
 
         verification_failues = []
@@ -402,11 +414,12 @@ class EdgeManage(object):
             if self.edge_states[edge].mode != "unavailable":
                 if edge in self.canary_data.values():
                     is_canary = True
-                    # current_health = self.canary_decision.get_judgement(edge)
+                    current_health = self.canary_decision.get_judgement(edge)
                 else:
                     is_canary = False
-                    # current_health = self.decision.get_judgement(edge)
-                self.state_obj.zone_mtimes = self.current_mtimes
+                    current_health = self.decision.get_judgement(edge)
+
+                self.edge_states[edge].set_health(current_health)
 
             if is_canary is False:
                 if self.edgelist_obj.is_live(edge):
@@ -422,5 +435,7 @@ class EdgeManage(object):
                 # dnet-wise insertion, which doesn't make sense for canaries.
                 # There should probably be another state defined for canaries?
                 self.edge_states[edge].set_state("out")
+
+        self.state_obj.zone_mtimes = self.current_mtimes
 
         return any_changes or edgelist_changed
