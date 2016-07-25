@@ -11,6 +11,7 @@ class DecisionMaker(object):
         # A results dict with edge as key, string as value, one of
         # VALID_HEALTHS
         self.current_judgement = {}
+        self.edges_disabled = False
 
     def add_edge_state(self, edge_state):
         self.edge_states[edge_state.edgename] = edge_state
@@ -30,6 +31,14 @@ class DecisionMaker(object):
         results_dict = {}
         for statusname in const.VALID_HEALTHS:
             results_dict[statusname] = 0
+
+        # Set all as failed if this set of edges have been disabled
+        if self.edges_disabled:
+            for edgename in self.edge_states:
+                results_dict["fail"] += 1
+                self.current_judgement[edgename] = "fail"
+            logging.info("FAIL: %d edges have been disabled", results_dict["fail"])
+            return results_dict
 
         for edgename, edge_state in self.edge_states.iteritems():
             time_slice = edge_state[time.time() - const.DECISION_SLICE_WINDOW:time.time()]

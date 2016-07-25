@@ -6,7 +6,7 @@ from .decisionmaker import DecisionMaker
 from .edgelist import EdgeList
 import const
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, CancelledError
 import itertools
 import glob
 import traceback
@@ -109,8 +109,31 @@ class EdgeManage(object):
         self.edge_states[edge] = edge_state
         return True
 
-    def do_edge_tests(self):
+    def check_canary_kill_treshhold(self, canary_futures):
+        """
+        Cancel canary tests and disable all canaries if too many are failing.
 
+        All canary tests which have not run already are canceled and their
+        result time will be set to the FETCH_TIMEOUT value. All finished
+        canary tests will be failed in DecisionMaker when `edges_disabled` is True.
+        """
+        canary_stats = self.canary_decision.check_threshold(self.config["goodenough"])
+
+        # Cancel all queued canary tests when too many canaries have failed.
+        if canary_stats["fail"] >= self.config["canary_killer"]:
+            self.canary_decision.edges_disabled = True
+
+            cancelled = [future.cancel() for future in canary_futures]
+            logging.info("Hit canary kill limit! canceled %d / %d queued canary tests.",
+                         cancelled.count(True), len(cancelled))
+
+            # Set every untested canary as TIMEOUT when we disable them.
+            for untested_edge in [edge for edge in self.canary_data.values() if
+                                  edge not in self.canary_decision.edge_states]:
+                self.edge_states[untested_edge].add_value(const.FETCH_TIMEOUT)
+                self.canary_decision.add_edge_state(self.edge_states[untested_edge])
+
+    def do_edge_tests(self):
         test_dict = self.config["testobject"]
         test_host = test_dict["host"]
         test_path = test_dict["uri"]
@@ -148,9 +171,10 @@ class EdgeManage(object):
             for f in as_completed(itertools.chain(edgescore_futures, canary_futures)):
                 try:
                     result = f.result()
-                except Exception:
-                    # Do some shit here
-                    raise
+                except CancelledError:
+                    # Do not try and process canceled edge tests
+                    continue
+
                 edge, value = result.items()[0]
                 fetch_result, fetch_status = value
 
@@ -164,13 +188,19 @@ class EdgeManage(object):
 
                 # Skip edges that we have forced out of commission
                 if self.edge_states[edge].mode == "unavailable":
-                    logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
+                    logging.debug("Skipping edge %s as its status has been set to unavailable",
+                                  edge)
                 else:
                     # otherwise add it to the appropriate decision maker
                     if edge in self.canary_data.values():
                         self.canary_decision.add_edge_state(self.edge_states[edge])
                     elif edge in self.edge_states:
                         self.decision.add_edge_state(self.edge_states[edge])
+
+                # Hard-kill the remaining canary tests if too many are failing. This
+                # also disables any canaries which have already been successfully tested.
+                if self.config["canary_killer"] and not self.canary_decision.edges_disabled:
+                    self.check_canary_kill_treshhold(canary_futures)
 
         return verification_failues
 

@@ -163,7 +163,7 @@ class EdgeManageIntegration(unittest.TestCase):
         All edges and canaries should timeout and be set as unavailable.
         """
         self.spawn_web_server('test_server_configs/20-edge-20-canaries-all-3-seconds.yaml')
-        custom_options = {'timeout': 2}
+        custom_options = {'timeout': 2, 'canary_killer': False}
         config_path = self.rewrite_default_config(options=custom_options,
                                                   num_edges=20, num_canaries=20)
 
@@ -174,6 +174,26 @@ class EdgeManageIntegration(unittest.TestCase):
         # Confirm that all edges were not healthy
         health_data = self.load_all_health_files()
         self.assertTrue(all([edge['health'] == "fail" for edge in health_data.values()]))
+
+    def test20Edges20CanariesCanaryKiller(self):
+        """
+        Run edge_manage against some fast and slow edges and canaries.
+
+        All the canaries should be failed when `canary_killer` number of
+        canaries have timed out. This test should run faster as we do not
+        try all the slow canaries.
+        """
+        self.spawn_web_server('test_server_configs/20-edge-20-canaries-half-slow.yaml')
+        custom_options = {'timeout': 2, 'canary_killer': 6}
+        config_path = self.rewrite_default_config(options=custom_options,
+                                                  num_edges=20, num_canaries=20)
+        self.run_edge_manage(config_path)
+
+        # Confirm that half the edges are healthy, but all canaries disabled.
+        health_data = self.load_all_health_files()
+        failed_edges = [edge for edge in health_data.values() if edge['health'] == "fail"]
+        self.assertTrue(len(health_data), 20)
+        self.assertTrue(len(failed_edges), 15)
 
     def tearDown(self):
         # Stop the Flask server

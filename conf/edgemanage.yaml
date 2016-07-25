@@ -60,6 +60,12 @@ retry: 3
 # explanation of how this value is used.
 goodenough: 0.700
 
+# All checks against the canary edges are disabled when this number of
+# edge tests have failed. All canaries for a dnet are typically run on
+# the same server. If many are down, then the whole server is probably
+# unavailable.
+canary_killer: 6
+
 # A file used to maintain state, details about last rotation and the
 # previously in-use edges. This path can and should contain {dnet}
 statefile: /var/lib/edgemanage/{dnet}.state
