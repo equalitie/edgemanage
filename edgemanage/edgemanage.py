@@ -340,7 +340,14 @@ class EdgeManage(object):
                 # "we didn't break". It's horrible but it's exactly what
                 # we need here.
                 logging.error("Tried to add edges from all acceptable states but failed")
-                # TODO randomly try to add edges in a panic
+
+                # As a last option we add use the last live set of edges, even if
+                # they are unresponsive. This isn't a great option, but it's better
+                # than sending an empty set of edges to the DNS servers.
+                logging.error("Re-adding the last live edges, even though they are failing!")
+                for edgename in self.state_obj.last_live:
+                    self.edgelist_obj.add_edge(edgename, state="pass", live=True)
+                edgelist_changed = False
 
         if self.edgelist_obj.get_live_count() == required_edge_count:
             logging.info("Successfully established %d edges: %s",
