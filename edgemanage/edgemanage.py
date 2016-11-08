@@ -105,6 +105,7 @@ class EdgeManage(object):
             edge_state = EdgeState(edge, edge_healthdata_path, nowrite=nowrite)
         except ValueError as exc:
             logging.error("Failed to load edgestate file for %s: %s", edge, str(exc))
+
             return False
         self.edge_states[edge] = edge_state
         return True
@@ -180,6 +181,13 @@ class EdgeManage(object):
 
                 if fetch_status == "verify_failed":
                     verification_failues.append(edge)
+
+                # The edge will not be in the edge_states list if it's statefile is not parsable.
+                # We should skip it and provide a warning so as to avoid stalling edgemanage.
+                if edge not in self.edge_states:
+                    logging.error("Could not find edge data for %s. Is the edge state "
+                                  "file corrupt?", edge)
+                    continue
 
                 self.edge_states[edge].add_value(fetch_result)
                 logging.info("Fetch time for %s: %f avg: %f",
@@ -369,7 +377,13 @@ class EdgeManage(object):
                     # We have a canary edge configured, let's see if
                     # it's healthy
                     canary_ip = self.canary_data[zone_name]
-                    canary_health = self.canary_decision.get_judgement(canary_ip)
+                    try:
+                        canary_health = self.canary_decision.get_judgement(canary_ip)
+                    except KeyError:
+                        # Mark canary as missing if a judgement can't be found for the
+                        # canary edge IP.
+                        canary_health = "missing"
+
                     if canary_health == "pass" or canary_health == "pass_window":
                         logging.info("Zone %s has a canary edge configured: %s",
                                      zone_name, canary_ip)
