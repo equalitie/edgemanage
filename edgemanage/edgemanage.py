@@ -207,8 +207,9 @@ class EdgeManage(object):
 
                 # Hard-kill the remaining canary tests if too many are failing. This
                 # also disables any canaries which have already been successfully tested.
-                if self.config["canary_killer"] and not self.canary_decision.edges_disabled:
-                    self.check_canary_kill_treshhold(canary_futures)
+                if self.canary_data:
+                    if self.config["canary_killer"] and not self.canary_decision.edges_disabled:
+                        self.check_canary_kill_treshhold(canary_futures)
 
         return verification_failues
 
