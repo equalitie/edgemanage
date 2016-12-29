@@ -6,6 +6,7 @@ import datetime
 import copy
 
 from const import FETCH_HISTORY, VALID_MODES, VALID_HEALTHS
+from util import open_atomic
 
 ASSUMED_VALS = {
     # A list of timestamps of when this edge has been in rotation
@@ -74,7 +75,10 @@ class EdgeState(object):
 
         for val_key, val_type in ASSUMED_VALS.iteritems():
             output[val_key] = getattr(self, val_key)
-        with open(self.statfile, "w") as statfile_f:
+        # The statfile must be written atomically to prevent file corruption
+        # if edgemanage is kiled during the write. A broken statfile will
+        # prevent edgemanage from running.
+        with open_atomic(self.statfile, mode="w") as statfile_f:
             json.dump(output, statfile_f, sort_keys=True, indent=4)
 
     def set_comment(self, comment):
