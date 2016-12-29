@@ -44,7 +44,13 @@ class EdgeState(object):
         self.statfile = os.path.join(store_dir, "%s.edgestore" % edgename)
         if os.path.isfile(self.statfile) and os.path.getsize(self.statfile) != 0:
             with open(self.statfile) as statfile_f:
-                stat_info = json.load(statfile_f)
+                try:
+                    stat_info = json.load(statfile_f)
+                except ValueError:
+                    logging.exception("Edgestore file %s is invalid", self.statfile)
+                    # Default to creating a new empty state file if current file is invalid
+                    stat_info = {}
+
             for val_key, val_type in ASSUMED_VALS.iteritems():
                 # Set self attributes for all dict vals in the stat
                 # store.
