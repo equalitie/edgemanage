@@ -6,7 +6,8 @@ from .decisionmaker import DecisionMaker
 from .edgelist import EdgeList
 import const
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, CancelledError
+import itertools
 import glob
 import traceback
 import hashlib
@@ -108,8 +109,31 @@ class EdgeManage(object):
         self.edge_states[edge] = edge_state
         return True
 
-    def do_edge_tests(self):
+    def check_canary_kill_treshhold(self, canary_futures):
+        """
+        Cancel canary tests and disable all canaries if too many are failing.
 
+        All canary tests which have not run already are canceled and their
+        result time will be set to the FETCH_TIMEOUT value. All finished
+        canary tests will be failed in DecisionMaker when `edges_disabled` is True.
+        """
+        canary_stats = self.canary_decision.check_threshold(self.config["goodenough"])
+
+        # Cancel all queued canary tests when too many canaries have failed.
+        if canary_stats["fail"] >= self.config["canary_killer"]:
+            self.canary_decision.edges_disabled = True
+
+            cancelled = [future.cancel() for future in canary_futures]
+            logging.info("Hit canary kill limit! canceled %d / %d queued canary tests.",
+                         cancelled.count(True), len(cancelled))
+
+            # Set every untested canary as TIMEOUT when we disable them.
+            for untested_edge in [edge for edge in self.canary_data.values() if
+                                  edge not in self.canary_decision.edge_states]:
+                self.edge_states[untested_edge].add_value(const.FETCH_TIMEOUT)
+                self.canary_decision.add_edge_state(self.edge_states[untested_edge])
+
+    def do_edge_tests(self):
         test_dict = self.config["testobject"]
         test_host = test_dict["host"]
         test_path = test_dict["uri"]
@@ -121,57 +145,62 @@ class EdgeManage(object):
             const.FETCH_TIMEOUT = self.config.get("timeout") or const.FETCH_TIMEOUT
 
         edgescore_futures = []
+        canary_futures = []
+        verification_failues = []
         with ThreadPoolExecutor(max_workers=self.config["workers"]) as executor:
             for edgename in self.edge_states:
                 # Send raw IP as the host header when in the testing environment
                 if self.config.get("testing"):
                     test_host = edgename
+
                 edge_t = EdgeTest(edgename, self.testobject_hash)
-                edgescore_futures.append(executor.submit(future_fetch,
-                                                         edge_t, test_host,
-                                                         test_path,
-                                                         test_proto,
-                                                         test_port,
-                                                         test_verify))
-            for canaryname in self.canary_data.values():
-                if self.config.get("testing"):
-                    test_host = canaryname
-                edge_t = EdgeTest(canaryname, self.testobject_hash)
-                edgescore_futures.append(executor.submit(future_fetch,
-                                                         edge_t, test_host,
-                                                         test_path,
-                                                         test_proto,
-                                                         test_port,
-                                                         test_verify))
+                edgetest_future = executor.submit(future_fetch,
+                                                  edge_t, test_host,
+                                                  test_path,
+                                                  test_proto,
+                                                  test_port,
+                                                  test_verify)
 
-        verification_failues = []
+                # Check if the current edge is a canary edge
+                if edgename not in self.canary_data.values():
+                    edgescore_futures.append(edgetest_future)
+                else:
+                    canary_futures.append(edgetest_future)
 
-        for f in as_completed(edgescore_futures):
-            try:
-                result = f.result()
-            except Exception:
-                # Do some shit here
-                raise
-            edge, value = result.items()[0]
-            fetch_result, fetch_status = value
+            # Iterate over the results of both Futures lists
+            for f in as_completed(itertools.chain(edgescore_futures, canary_futures)):
+                try:
+                    result = f.result()
+                except CancelledError:
+                    # Do not try and process canceled edge tests
+                    continue
 
-            if fetch_status == "verify_failed":
-                verification_failues.append(edge)
+                edge, value = result.items()[0]
+                fetch_result, fetch_status = value
 
-            self.edge_states[edge].add_value(fetch_result)
-            logging.info("Fetch time for %s: %f avg: %f",
-                         edge, fetch_result,
-                         self.edge_states[edge].current_average())
+                if fetch_status == "verify_failed":
+                    verification_failues.append(edge)
 
-            # Skip edges that we have forced out of commission
-            if self.edge_states[edge].mode == "unavailable":
-                logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
-            else:
-                # otherwise add it to the appropriate decision maker
-                if edge in self.canary_data.values():
-                    self.canary_decision.add_edge_state(self.edge_states[edge])
-                elif edge in self.edge_states:
-                    self.decision.add_edge_state(self.edge_states[edge])
+                self.edge_states[edge].add_value(fetch_result)
+                logging.info("Fetch time for %s: %f avg: %f",
+                             edge, fetch_result,
+                             self.edge_states[edge].current_average())
+
+                # Skip edges that we have forced out of commission
+                if self.edge_states[edge].mode == "unavailable":
+                    logging.debug("Skipping edge %s as its status has been set to unavailable",
+                                  edge)
+                else:
+                    # otherwise add it to the appropriate decision maker
+                    if edge in self.canary_data.values():
+                        self.canary_decision.add_edge_state(self.edge_states[edge])
+                    elif edge in self.edge_states:
+                        self.decision.add_edge_state(self.edge_states[edge])
+
+                # Hard-kill the remaining canary tests if too many are failing. This
+                # also disables any canaries which have already been successfully tested.
+                if self.config["canary_killer"] and not self.canary_decision.edges_disabled:
+                    self.check_canary_kill_treshhold(canary_futures)
 
         return verification_failues
 
@@ -311,7 +340,14 @@ class EdgeManage(object):
                 # "we didn't break". It's horrible but it's exactly what
                 # we need here.
                 logging.error("Tried to add edges from all acceptable states but failed")
-                # TODO randomly try to add edges in a panic
+
+                # As a last option we add use the last live set of edges, even if
+                # they are unresponsive. This isn't a great option, but it's better
+                # than sending an empty set of edges to the DNS servers.
+                logging.error("Re-adding the last live edges, even though they are failing!")
+                for edgename in self.state_obj.last_live:
+                    self.edgelist_obj.add_edge(edgename, state="pass", live=True)
+                edgelist_changed = False
 
         if self.edgelist_obj.get_live_count() == required_edge_count:
             logging.info("Successfully established %d edges: %s",
