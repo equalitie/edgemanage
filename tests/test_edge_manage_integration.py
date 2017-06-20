@@ -8,6 +8,7 @@ import yaml
 import logging
 import pdb
 import time
+import collections
 
 import pexpect
 
@@ -201,6 +202,36 @@ class EdgeManageIntegration(unittest.TestCase):
         self.assertTrue(len(health_data), 20)
         self.assertTrue(len(failed_edges), 15)
         self.assertLess(self.running_time, 5)
+
+    def test10Edges10CanariesStaggered(self):
+        """
+        Run edge_manage against edges and canaries with a range of response times.
+        Only the fastest edges should be selected.
+        """
+        self.spawn_web_server('test_server_configs/10-edge-10-canaries-staggered.yaml')
+        custom_options = {'timeout': 5}
+        config_path = self.rewrite_default_config(options=custom_options,
+                                                  num_edges=10, num_canaries=10)
+
+        # Run edge_manage
+        self.run_edge_manage(config_path)
+
+        state_data = self.load_state_file()
+        self.assertTrue(len(state_data['last_live']), 4)
+
+        # The first four edges must be selected as they are the fastest
+        self.assertEqual(state_data['last_live'],
+                         ['127.0.0.1', '127.0.0.2', '127.0.0.3', '127.0.0.4'])
+
+        # import pdb; pdb.set_trace()
+
+        health_data = self.load_all_health_files()
+        health_count = collections.Counter([edge['health'] for edge in health_data.values()])
+
+        self.assertEqual(len(health_data), 20)
+        self.assertTrue(health_count["pass_threshold"], 4)
+        self.assertTrue(health_count["pass"], 8)
+        self.assertTrue(health_count["fail"], 8)
 
     def tearDown(self):
         # Stop the Flask server
