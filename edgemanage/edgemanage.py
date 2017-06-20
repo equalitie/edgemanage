@@ -214,9 +214,12 @@ class EdgeManage(object):
         return verification_failues
 
     def check_last_live(self):
+        """
+        A list of edges that were in use last time that are still
+        healthy now.
 
-        # A list of edges that were in use last time that are still
-        # healthy now.
+        Healthy means the fetch time is less than the good_enough threshold
+        """
         still_healthy = []
 
         if self.state_obj.last_live:
@@ -235,7 +238,8 @@ class EdgeManage(object):
             except KeyError:
                 oldlive_health = None
 
-            if oldlive_edge in self.decision.current_judgement and oldlive_health == "pass":
+            if (oldlive_edge in self.decision.current_judgement and
+                    oldlive_health == "pass_threshold"):
                 still_healthy.append(oldlive_edge)
             elif oldlive_edge not in self.decision.current_judgement:
                 logging.warning(("Discarding previously live edge %s "
@@ -243,7 +247,8 @@ class EdgeManage(object):
                                 oldlive_edge)
             else:
                 logging.debug(
-                    "Discarding previously live edge %s because it is in state %s",
+                    "Discarding previously live edge %s because it is not "
+                    "in state 'pass_threshold', current state: %s",
                     oldlive_edge,
                     self.decision.get_judgement(oldlive_edge))
 
@@ -278,12 +283,12 @@ class EdgeManage(object):
             logging.debug("Stats of canary threshold check are %s", str(canary_stats))
 
         # Get the list of edges that were 'in' (live) the last time and are
-        # still healthy
+        # still healthy (under the good_enough threshold)
         still_healthy_from_last_run = self.check_last_live()
 
         for edgename, edge_state in self.edge_states.iteritems():
             if edgename not in self.canary_data.values() and edge_state.mode == "force":
-                if self.decision.get_judgement(edgename) == "pass":
+                if self.decision.edge_is_passing(edgename):
                     logging.debug(
                         "Making host %s live because it is in mode force and it is in state pass",
                         edgename)
@@ -335,9 +340,8 @@ class EdgeManage(object):
             logging.debug("List of previously passing edges is currently %s",
                           self.edgelist_obj.get_live_edges())
 
-            # Attempt to meet demand, first with passing, then with
-            # window, then with average passing
-            for desired_state in ["pass", "pass_window", "pass_average"]:
+            # Attempt to meet demand starting with the most responsive edge states
+            for desired_state in ["pass_threshold", "pass_window", "pass_average", "pass"]:
                 filled_by_current_state = self.edgelist_obj.set_live_by_state(desired_state,
                                                                               required_edge_count)
                 if filled_by_current_state:

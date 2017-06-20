@@ -39,4 +39,5 @@ VALID_MODES = ["available", "force", "blindforce", "unavailable"]
 
 # Valid states that an edge will be put into after a result of a
 # decision being passed upon tests.
-VALID_HEALTHS = ["pass", "fail", "pass_window", "pass_average"]
+VALID_HEALTHS = ["pass_threshold", "pass_window", "pass_average", "pass",
+                 "fail"]
