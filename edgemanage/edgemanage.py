@@ -105,6 +105,7 @@ class EdgeManage(object):
             edge_state = EdgeState(edge, edge_healthdata_path, nowrite=nowrite)
         except ValueError as exc:
             logging.error("Failed to load edgestate file for %s: %s", edge, str(exc))
+
             return False
         self.edge_states[edge] = edge_state
         return True
@@ -181,6 +182,13 @@ class EdgeManage(object):
                 if fetch_status == "verify_failed":
                     verification_failues.append(edge)
 
+                # The edge will not be in the edge_states list if it's statefile is not parsable.
+                # We should skip it and provide a warning so as to avoid stalling edgemanage.
+                if edge not in self.edge_states:
+                    logging.error("Could not find edge data for %s. Is the edge state "
+                                  "file corrupt?", edge)
+                    continue
+
                 self.edge_states[edge].add_value(fetch_result)
                 logging.info("Fetch time for %s: %f avg: %f",
                              edge, fetch_result,
@@ -199,8 +207,9 @@ class EdgeManage(object):
 
                 # Hard-kill the remaining canary tests if too many are failing. This
                 # also disables any canaries which have already been successfully tested.
-                if self.config["canary_killer"] and not self.canary_decision.edges_disabled:
-                    self.check_canary_kill_treshhold(canary_futures)
+                if self.canary_data:
+                    if self.config["canary_killer"] and not self.canary_decision.edges_disabled:
+                        self.check_canary_kill_treshhold(canary_futures)
 
         return verification_failues
 
@@ -369,7 +378,13 @@ class EdgeManage(object):
                     # We have a canary edge configured, let's see if
                     # it's healthy
                     canary_ip = self.canary_data[zone_name]
-                    canary_health = self.canary_decision.get_judgement(canary_ip)
+                    try:
+                        canary_health = self.canary_decision.get_judgement(canary_ip)
+                    except KeyError:
+                        # Mark canary as missing if a judgement can't be found for the
+                        # canary edge IP.
+                        canary_health = "missing"
+
                     if canary_health == "pass" or canary_health == "pass_window":
                         logging.info("Zone %s has a canary edge configured: %s",
                                      zone_name, canary_ip)
@@ -447,7 +462,7 @@ class EdgeManage(object):
         # We've got our edges, one way or another - let's set their states
         # Note in the statefile that this edge has been put into rotation
         for edge in self.edge_states:
-            if self.edge_states[edge].mode != "unavailable":
+            try:
                 if edge in self.canary_data.values():
                     is_canary = True
                     current_health = self.canary_decision.get_judgement(edge)
@@ -456,6 +471,8 @@ class EdgeManage(object):
                     current_health = self.decision.get_judgement(edge)
 
                 self.edge_states[edge].set_health(current_health)
+            except KeyError:
+                logging.debug("Could not get health judgement for edge %s", edge)
 
             if is_canary is False:
                 if self.edgelist_obj.is_live(edge):

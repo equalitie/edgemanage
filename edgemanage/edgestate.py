@@ -6,6 +6,7 @@ import datetime
 import copy
 
 from const import FETCH_HISTORY, VALID_MODES, VALID_HEALTHS
+from util import open_atomic
 
 ASSUMED_VALS = {
     # A list of timestamps of when this edge has been in rotation
@@ -43,7 +44,13 @@ class EdgeState(object):
         self.statfile = os.path.join(store_dir, "%s.edgestore" % edgename)
         if os.path.isfile(self.statfile) and os.path.getsize(self.statfile) != 0:
             with open(self.statfile) as statfile_f:
-                stat_info = json.load(statfile_f)
+                try:
+                    stat_info = json.load(statfile_f)
+                except ValueError:
+                    logging.exception("Edgestore file %s is invalid", self.statfile)
+                    # Default to creating a new empty state file if current file is invalid
+                    stat_info = {}
+
             for val_key, val_type in ASSUMED_VALS.iteritems():
                 # Set self attributes for all dict vals in the stat
                 # store.
@@ -74,7 +81,10 @@ class EdgeState(object):
 
         for val_key, val_type in ASSUMED_VALS.iteritems():
             output[val_key] = getattr(self, val_key)
-        with open(self.statfile, "w") as statfile_f:
+        # The statfile must be written atomically to prevent file corruption
+        # if edgemanage is kiled during the write. A broken statfile will
+        # prevent edgemanage from running.
+        with open_atomic(self.statfile, mode="w") as statfile_f:
             json.dump(output, statfile_f, sort_keys=True, indent=4)
 
     def set_comment(self, comment):
