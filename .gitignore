@@ -3,6 +3,8 @@
 *pyo
 .coverage
 .cache/
+.tox/
 build/
 dist/
 edgemanage.egg-info/
+htmlcov/

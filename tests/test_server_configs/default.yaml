@@ -1,0 +1,39 @@
+# Each edge or canary is assigned a unique ID. This ID is used to reference
+# and make requests to the individual edge canary by connecting to the test
+# web server on a specific host address.
+#
+# The final octet of the server host address is used as the requested edge ID.
+#
+# Examples:
+# 127.0.0.3     =  Edge 3
+# 127.1.10.5    =  Edge 5
+# 127.0.0.101   =  Canary 1
+#
+# The web server will give a response with delay, timeout or close the
+# connection depending on the edge configuration.
+
+# Edge List
+edge_list:
+  1:
+    delay: 0
+  2:
+    delay: 1
+  3:
+    delay: 1
+  4:
+    delay: 1
+  5:
+    delay: 10
+
+
+# Canary List
+  101:
+    delay: 15
+  102:
+    delay: 15
+  103:
+    offline: True
+  104:
+    offline: True
+  105:
+    delay: 5

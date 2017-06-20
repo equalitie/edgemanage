@@ -6,8 +6,8 @@
 # http://stackoverflow.com/questions/2632199/how-do-i-get-the-path-of-the-current-executed-file-in-python
 #
 # Usage:
-#import module_locator
-#my_path = module_locator.module_path()
+# import module_locator
+# my_path = module_locator.module_path()
 
 
 import os
@@ -17,6 +17,7 @@ import sys
 def we_are_frozen():
     # All of the modules are built-in to the interpreter, e.g., by py2exe
     return hasattr(sys, "frozen")
+
 
 def module_path():
     # Return the absolute filesystem path to this module

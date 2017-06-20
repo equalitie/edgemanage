@@ -3,11 +3,11 @@
 # http://docs.python-guide.org/en/latest/writing/structure/
 
 # Usage in a test module:
-#from .context import edgemanage
+# from .context import edgemanage
 
 import os
 import sys
 
 sys.path.insert(0, os.path.abspath('..'))
 
-import edgemanage
+import edgemanage  # flake8: noqa

@@ -6,8 +6,9 @@ import datetime
 import copy
 
 from const import FETCH_HISTORY, VALID_MODES, VALID_HEALTHS
+from util import open_atomic
 
-ASSUMED_VALS={
+ASSUMED_VALS = {
     # A list of timestamps of when this edge has been in rotation
     "rotation_history": [],
     # A dict keyed by timestamps with values of floats containing
@@ -24,6 +25,11 @@ ASSUMED_VALS={
     "comment": "",
 }
 
+# ASSUMED_VALS is used to dynamically fill EdgeState attributes, we need
+# to disable pylint member checks as it one be able to check these attributes.
+# pylint: disable=no-member, access-member-before-definition
+
+
 class EdgeState(object):
 
     def __init__(self, edgename, store_dir, nowrite=False):
@@ -38,13 +44,19 @@ class EdgeState(object):
         self.statfile = os.path.join(store_dir, "%s.edgestore" % edgename)
         if os.path.isfile(self.statfile) and os.path.getsize(self.statfile) != 0:
             with open(self.statfile) as statfile_f:
-                stat_info = json.load(statfile_f)
+                try:
+                    stat_info = json.load(statfile_f)
+                except ValueError:
+                    logging.exception("Edgestore file %s is invalid", self.statfile)
+                    # Default to creating a new empty state file if current file is invalid
+                    stat_info = {}
+
             for val_key, val_type in ASSUMED_VALS.iteritems():
                 # Set self attributes for all dict vals in the stat
                 # store.
                 try:
                     setattr(self, val_key, stat_info[val_key])
-                except KeyError as e:
+                except KeyError:
                     # If the stat store lacks one of the keys in the
                     # dict, then initialise it with the default value
                     # from ASSUMED_VALS (usually just a type) - this
@@ -69,7 +81,10 @@ class EdgeState(object):
 
         for val_key, val_type in ASSUMED_VALS.iteritems():
             output[val_key] = getattr(self, val_key)
-        with open(self.statfile, "w") as statfile_f:
+        # The statfile must be written atomically to prevent file corruption
+        # if edgemanage is kiled during the write. A broken statfile will
+        # prevent edgemanage from running.
+        with open_atomic(self.statfile, mode="w") as statfile_f:
             json.dump(output, statfile_f, sort_keys=True, indent=4)
 
     def set_comment(self, comment):
@@ -159,7 +174,8 @@ class EdgeState(object):
         # prune our values if there's too many of them
         if len(self.fetch_times) > FETCH_HISTORY:
             min_value = sorted(self.fetch_times.keys())[0]
-            logging.debug("Rotating out item with timestamp %s and value %f due to fetch cache being over %d items",
+            logging.debug("Rotating out item with timestamp %s and value %f due to "
+                          "fetch cache being over %d items",
                           min_value, self.fetch_times[min_value], FETCH_HISTORY)
             del(self.fetch_times[min_value])
 

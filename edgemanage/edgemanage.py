@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
-from edgetest import EdgeTest, VerifyFailed, FetchFailed
-from edgestate import EdgeState
-from decisionmaker import DecisionMaker
-from edgelist import EdgeList
-from const import FETCH_TIMEOUT
+from .edgetest import EdgeTest, VerifyFailed, FetchFailed
+from .edgestate import EdgeState
+from .decisionmaker import DecisionMaker
+from .edgelist import EdgeList
+import const
 
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, CancelledError
+import itertools
 import glob
 import traceback
 import hashlib
@@ -15,23 +16,24 @@ import os
 
 
 def future_fetch(edgetest, testobject_host, testobject_path,
-                 testobject_proto, testobject_verify):
+                 testobject_proto, testobject_port, testobject_verify):
     """Helper function to give us a return value that plays nice with as_completed"""
 
     fetch_status = None
     try:
         fetch_result = edgetest.fetch(testobject_host, testobject_path,
-                                      testobject_proto, testobject_verify)
-    except VerifyFailed as exc:
+                                      testobject_proto, testobject_port,
+                                      testobject_verify)
+    except VerifyFailed:
         # Ensure that we don't use hosts where verification has failed
-        fetch_result = FETCH_TIMEOUT
+        fetch_result = const.FETCH_TIMEOUT
         fetch_status = "verify_failed"
-    except FetchFailed as exc:
+    except FetchFailed:
         # Ensure that we don't use hosts where fetching the object has
         # caused a HTTP error
-        fetch_result = FETCH_TIMEOUT
+        fetch_result = const.FETCH_TIMEOUT
         fetch_status = "fetch_failed"
-    except Exception as exc:
+    except Exception:
         logging.error("Uncaught exception in fetch! %s", traceback.format_exc())
     return {edgetest.edgename: (fetch_result, fetch_status)}
 
@@ -103,63 +105,111 @@ class EdgeManage(object):
             edge_state = EdgeState(edge, edge_healthdata_path, nowrite=nowrite)
         except ValueError as exc:
             logging.error("Failed to load edgestate file for %s: %s", edge, str(exc))
+
             return False
         self.edge_states[edge] = edge_state
         return True
 
-    def do_edge_tests(self):
+    def check_canary_kill_treshhold(self, canary_futures):
+        """
+        Cancel canary tests and disable all canaries if too many are failing.
 
+        All canary tests which have not run already are canceled and their
+        result time will be set to the FETCH_TIMEOUT value. All finished
+        canary tests will be failed in DecisionMaker when `edges_disabled` is True.
+        """
+        canary_stats = self.canary_decision.check_threshold(self.config["goodenough"])
+
+        # Cancel all queued canary tests when too many canaries have failed.
+        if canary_stats["fail"] >= self.config["canary_killer"]:
+            self.canary_decision.edges_disabled = True
+
+            cancelled = [future.cancel() for future in canary_futures]
+            logging.info("Hit canary kill limit! canceled %d / %d queued canary tests.",
+                         cancelled.count(True), len(cancelled))
+
+            # Set every untested canary as TIMEOUT when we disable them.
+            for untested_edge in [edge for edge in self.canary_data.values() if
+                                  edge not in self.canary_decision.edge_states]:
+                self.edge_states[untested_edge].add_value(const.FETCH_TIMEOUT)
+                self.canary_decision.add_edge_state(self.edge_states[untested_edge])
+
+    def do_edge_tests(self):
         test_dict = self.config["testobject"]
         test_host = test_dict["host"]
         test_path = test_dict["uri"]
         test_proto = test_dict["proto"]
+        test_port = test_dict.get("port", 80)
         test_verify = test_dict["verify"]
+        if self.config.get("testing"):
+            # Allow FETCH_TIMEOUT to be overridden in TESTING mode.
+            const.FETCH_TIMEOUT = self.config.get("timeout") or const.FETCH_TIMEOUT
 
         edgescore_futures = []
-        with ProcessPoolExecutor() as executor:
-            for edgename in self.edge_states:
-                edge_t = EdgeTest(edgename, self.testobject_hash)
-                edgescore_futures.append(executor.submit(future_fetch,
-                                                         edge_t, test_host,
-                                                         test_path,
-                                                         test_proto,
-                                                         test_verify))
-            for canaryname in self.canary_data.values():
-                edge_t = EdgeTest(canaryname, self.testobject_hash)
-                edgescore_futures.append(executor.submit(future_fetch,
-                                                         edge_t, test_host,
-                                                         test_path,
-                                                         test_proto,
-                                                         test_verify))
-
+        canary_futures = []
         verification_failues = []
+        with ThreadPoolExecutor(max_workers=self.config["workers"]) as executor:
+            for edgename in self.edge_states:
+                # Send raw IP as the host header when in the testing environment
+                if self.config.get("testing"):
+                    test_host = edgename
 
-        for f in as_completed(edgescore_futures):
-            try:
-                result = f.result()
-            except Exception as e:
-                # Do some shit here
-                raise
-            edge, value = result.items()[0]
-            fetch_result, fetch_status = value
+                edge_t = EdgeTest(edgename, self.testobject_hash)
+                edgetest_future = executor.submit(future_fetch,
+                                                  edge_t, test_host,
+                                                  test_path,
+                                                  test_proto,
+                                                  test_port,
+                                                  test_verify)
 
-            if fetch_status == "verify_failed":
-                verification_failues.append(edge)
+                # Check if the current edge is a canary edge
+                if edgename not in self.canary_data.values():
+                    edgescore_futures.append(edgetest_future)
+                else:
+                    canary_futures.append(edgetest_future)
 
-            self.edge_states[edge].add_value(fetch_result)
-            logging.info("Fetch time for %s: %f avg: %f",
-                         edge, fetch_result,
-                         self.edge_states[edge].current_average())
+            # Iterate over the results of both Futures lists
+            for f in as_completed(itertools.chain(edgescore_futures, canary_futures)):
+                try:
+                    result = f.result()
+                except CancelledError:
+                    # Do not try and process canceled edge tests
+                    continue
 
-            # Skip edges that we have forced out of commission
-            if self.edge_states[edge].mode == "unavailable":
-                logging.debug("Skipping edge %s as its status has been set to unavailable", edge)
-            else:
-                # otherwise add it to the appropriate decision maker
-                if edge in self.canary_data.values():
-                    self.canary_decision.add_edge_state(self.edge_states[edge])
-                elif edge in self.edge_states:
-                    self.decision.add_edge_state(self.edge_states[edge])
+                edge, value = result.items()[0]
+                fetch_result, fetch_status = value
+
+                if fetch_status == "verify_failed":
+                    verification_failues.append(edge)
+
+                # The edge will not be in the edge_states list if it's statefile is not parsable.
+                # We should skip it and provide a warning so as to avoid stalling edgemanage.
+                if edge not in self.edge_states:
+                    logging.error("Could not find edge data for %s. Is the edge state "
+                                  "file corrupt?", edge)
+                    continue
+
+                self.edge_states[edge].add_value(fetch_result)
+                logging.info("Fetch time for %s: %f avg: %f",
+                             edge, fetch_result,
+                             self.edge_states[edge].current_average())
+
+                # Skip edges that we have forced out of commission
+                if self.edge_states[edge].mode == "unavailable":
+                    logging.debug("Skipping edge %s as its status has been set to unavailable",
+                                  edge)
+                else:
+                    # otherwise add it to the appropriate decision maker
+                    if edge in self.canary_data.values():
+                        self.canary_decision.add_edge_state(self.edge_states[edge])
+                    elif edge in self.edge_states:
+                        self.decision.add_edge_state(self.edge_states[edge])
+
+                # Hard-kill the remaining canary tests if too many are failing. This
+                # also disables any canaries which have already been successfully tested.
+                if self.canary_data:
+                    if self.config["canary_killer"] and not self.canary_decision.edges_disabled:
+                        self.check_canary_kill_treshhold(canary_futures)
 
         return verification_failues
 
@@ -182,7 +232,7 @@ class EdgeManage(object):
                     oldlive_health = self.canary_decision.get_judgement(oldlive_edge)
                 else:
                     oldlive_health = self.decision.get_judgement(oldlive_edge)
-            except KeyError as exc:
+            except KeyError:
                 oldlive_health = None
 
             if oldlive_edge in self.decision.current_judgement and oldlive_health == "pass":
@@ -227,23 +277,24 @@ class EdgeManage(object):
             canary_stats = self.canary_decision.check_threshold(good_enough)
             logging.debug("Stats of canary threshold check are %s", str(canary_stats))
 
-        # Get the list of previously healthy edges
+        # Get the list of edges that were 'in' (live) the last time and are
+        # still healthy
         still_healthy_from_last_run = self.check_last_live()
 
         for edgename, edge_state in self.edge_states.iteritems():
-            if edge_state.mode == "force":
+            if edgename not in self.canary_data.values() and edge_state.mode == "force":
                 if self.decision.get_judgement(edgename) == "pass":
                     logging.debug(
                         "Making host %s live because it is in mode force and it is in state pass",
                         edgename)
 
                     # Don't set edgelist_changed to True if we're
-                    # already heathy and live
-                    if not edgename in still_healthy_from_last_run:
+                    # already healthy and live
+                    if edgename not in still_healthy_from_last_run:
                         self.edgelist_obj.add_edge(edgename, state="pass", live=True)
                         edgelist_changed = True
 
-            elif edge_state.mode == "blindforce":
+            elif edgename not in self.canary_data.values() and edge_state.mode == "blindforce":
                 logging.debug("Making host %s live because it is in mode blindforce.",
                               edgename)
                 self.edgelist_obj.add_edge(edgename, state="pass", live=True)
@@ -259,7 +310,7 @@ class EdgeManage(object):
         if still_healthy_from_last_run:
             logging.info("Got list of previously in use edges that are in a passing state: %s",
                          still_healthy_from_last_run)
-            if edgelist_changed == None:
+            if edgelist_changed is None:
                 # This check is to ensure that a previously-passing
                 # list doesn't ignore forced or blindforced edges.
                 edgelist_changed = False
@@ -277,6 +328,7 @@ class EdgeManage(object):
                            "edge count - trying to add more edges"))
             edgelist_changed = True
 
+            # This loops over the non-canary edges
             for decision_edge, edge_state in self.decision.current_judgement.iteritems():
                 if decision_edge not in self.edgelist_obj.edges:
                     self.edgelist_obj.add_edge(decision_edge, state=edge_state)
@@ -297,7 +349,14 @@ class EdgeManage(object):
                 # "we didn't break". It's horrible but it's exactly what
                 # we need here.
                 logging.error("Tried to add edges from all acceptable states but failed")
-                # TODO randomly try to add edges in a panic
+
+                # As a last option we add use the last live set of edges, even if
+                # they are unresponsive. This isn't a great option, but it's better
+                # than sending an empty set of edges to the DNS servers.
+                logging.error("Re-adding the last live edges, even though they are failing!")
+                for edgename in self.state_obj.last_live:
+                    self.edgelist_obj.add_edge(edgename, state="pass", live=True)
+                edgelist_changed = False
 
         if self.edgelist_obj.get_live_count() == required_edge_count:
             logging.info("Successfully established %d edges: %s",
@@ -305,32 +364,26 @@ class EdgeManage(object):
                          self.edgelist_obj.get_live_edges())
 
             # Iterate over every *zone file in the zonetemplate dir and write out files.
+            # (current_mtimes is an array that associates a zone name to its
+            # mtime)
             for zone_name in self.current_mtimes:
 
-                # Unless an update is forced:
-                # * Skip files that haven't been changed
-                # * Write out zone files we haven't seen before
-                # * don't write out updated zone files when we aren't changing edge list
-                old_mtime = self.state_obj.zone_mtimes.get(zone_name)
-                if not force_update and not edgelist_changed and old_mtime and old_mtime == self.current_mtimes[zone_name]:
-                    logging.info("Not writing zonefile for %s because there are no changes pending",
-                                 zone_name)
-                    continue
-                else:
-                    any_changes = True
+                previous_canary = None
+                if zone_name in self.state_obj.active_canaries:
+                    previous_canary = self.state_obj.active_canaries[zone_name]
 
+                canary_changed = False
                 canary_edge = None
                 if zone_name in self.canary_data:
-                    # NOTE: I am VERY unhappy about altering control
-                    # flow as regards edge selection here but it would
-                    # be infinitely messier to add zone tracking to
-                    # anything outside of the edgemanage object
-                    # itself.
-
                     # We have a canary edge configured, let's see if
                     # it's healthy
                     canary_ip = self.canary_data[zone_name]
-                    canary_health = self.canary_decision.get_judgement(canary_ip)
+                    try:
+                        canary_health = self.canary_decision.get_judgement(canary_ip)
+                    except KeyError:
+                        # Mark canary as missing if a judgement can't be found for the
+                        # canary edge IP.
+                        canary_health = "missing"
 
                     if canary_health == "pass" or canary_health == "pass_window":
                         logging.info("Zone %s has a canary edge configured: %s",
@@ -342,6 +395,46 @@ class EdgeManage(object):
                              "in state %s so it will not be used. "),
                             zone_name, canary_ip, canary_health)
 
+                    # Is the canary different from the one used before?
+                    # Will we need to re-write zonefile?
+                    if not previous_canary and canary_edge:
+                        logging.info("Canary edge %s for zone %s is new: re-writing zonefile",
+                                     canary_edge, zone_name)
+                        canary_changed = True
+                    elif not canary_edge and previous_canary:
+                        logging.info("Canary edge %s for zone %s not used anymore: re-writing "
+                                     "zonefile", previous_canary, zone_name)
+                        canary_changed = True
+                    elif canary_edge != previous_canary:
+                        logging.info("Canary edge for zone %s changed from %s to %s: re-writing "
+                                     "zonefile", zone_name, previous_canary, canary_edge)
+                        canary_changed = True
+
+                elif previous_canary:
+                    # We used to have a canary for the domain, but it is not
+                    # configured anymore: we'll just need to re-write zonefile
+                    logging.info("Canary edge %s for zone %s not used anymore: re-writing "
+                                 "zonefile", previous_canary, zone_name)
+                    canary_changed = True
+
+                if canary_edge:
+                    self.state_obj.active_canaries[zone_name] = canary_edge
+                elif previous_canary:
+                    del(self.state_obj.active_canaries[zone_name])
+
+                # Unless an update is forced:
+                # * Skip files that haven't been changed
+                # * Write out zone files we haven't seen before
+                # * don't write out updated zone files when we aren't changing edge list
+                old_mtime = self.state_obj.zone_mtimes.get(zone_name)
+                if (not force_update and not edgelist_changed and not canary_changed and
+                        old_mtime and old_mtime == self.current_mtimes[zone_name]):
+                    logging.info("Not writing zonefile for %s because there are no changes pending",
+                                 zone_name)
+                    continue
+                else:
+                    any_changes = True
+
                 complete_zone_str = self.edgelist_obj.generate_zone(
                     zone_name, os.path.join(self.config["zonetemplate_dir"], self.dnet),
                     self.config["dns"], canary_edge=canary_edge
@@ -349,7 +442,7 @@ class EdgeManage(object):
 
                 complete_zone_path = os.path.join(self.config["named_dir"],
                                                   "%s.zone" % zone_name)
-                #TODO add rotation of old files
+                # TODO: add rotation of old files
                 if not self.dry_run:
                     with open(complete_zone_path, "w") as complete_zone_f:
                         logging.debug("Writing completed zone file for %s to %s",
@@ -360,7 +453,6 @@ class EdgeManage(object):
                                    "It would have contained:\n%s"),
                                   complete_zone_path, zone_name, complete_zone_str)
 
-
         else:
             logging.error("Couldn't establish full edge list! Only have %d edges (%s), need %d",
                           self.edgelist_obj.get_live_count(),
@@ -370,22 +462,33 @@ class EdgeManage(object):
         # We've got our edges, one way or another - let's set their states
         # Note in the statefile that this edge has been put into rotation
         for edge in self.edge_states:
-            if self.edge_states[edge].mode != "unavailable":
+            try:
                 if edge in self.canary_data.values():
                     is_canary = True
                     current_health = self.canary_decision.get_judgement(edge)
                 else:
                     is_canary = False
                     current_health = self.decision.get_judgement(edge)
-                self.state_obj.zone_mtimes = self.current_mtimes
 
-            if self.edgelist_obj.is_live(edge):
-                # Note in the statefile that this edge has been put into rotation
-                logging.debug("Setting %sedge %s to state in", "canary " if is_canary else "", edge)
-                self.edge_states[edge].add_rotation()
-                self.edge_states[edge].set_state("in")
+                self.edge_states[edge].set_health(current_health)
+            except KeyError:
+                logging.debug("Could not get health judgement for edge %s", edge)
+
+            if is_canary is False:
+                if self.edgelist_obj.is_live(edge):
+                    # Note in the statefile that this edge has been put into rotation
+                    logging.debug("Setting edge %s to state in", edge)
+                    self.edge_states[edge].add_rotation()
+                    self.edge_states[edge].set_state("in")
+                else:
+                    logging.debug("Setting edge %s to state out", edge)
+                    self.edge_states[edge].set_state("out")
             else:
-                logging.debug("Setting %sedge %s to state out", "canary " if is_canary else "", edge)
+                # Canaries are silently set to "out", because the state "in" implies a
+                # dnet-wise insertion, which doesn't make sense for canaries.
+                # There should probably be another state defined for canaries?
                 self.edge_states[edge].set_state("out")
+
+        self.state_obj.zone_mtimes = self.current_mtimes
 
         return any_changes or edgelist_changed

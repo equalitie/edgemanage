@@ -7,6 +7,7 @@ import module_locator
 TEST_DOMAIN = "fakesite.deflect.ca"
 my_path = module_locator.module_path() + "/test_data"
 
+
 class EdgeListTest(unittest.TestCase):
 
     def test_reject_bad_NS(self):
@@ -57,11 +58,13 @@ class EdgeListTest(unittest.TestCase):
         a = edgemanage.EdgeList()
         a.add_edge("example.com")
         a.set_edge_live("example.com")
-        new_zone = a.generate_zone("test.com", my_path, {"ns_records": ["adns1.easydns.com."],
-                                                             "soa_mailbox": "test.derp.com",
-                                                             "soa_nameserver": "derpderpderp.com"
-                                                         },
-                                   serial_number=1234)
+        new_zone = a.generate_zone("test.com", my_path, {
+                "ns_records": ["adns1.easydns.com."],
+                "soa_mailbox": "test.derp.com",
+                "soa_nameserver": "derpderpderp.com",
+            },
+            serial_number=1234,
+        )
         with open(my_path + "/test.com.output") as known_zone_f:
             known_zone = known_zone_f.read()
         self.assertEqual(known_zone, new_zone)
@@ -70,11 +73,13 @@ class EdgeListTest(unittest.TestCase):
         a = edgemanage.EdgeList()
         a.add_edge("example.com")
         a.set_edge_live("example.com")
-        new_zone = a.generate_zone("test.zone", my_path, {"ns_records": ["adns1.easydns.com."],
-                                                             "soa_mailbox": "test.derp.com",
-                                                             "soa_nameserver": "derpderpderp.com"
-                                                         },
-                                   serial_number=1234)
+        new_zone = a.generate_zone("test.zone", my_path, {
+                "ns_records": ["adns1.easydns.com."],
+                "soa_mailbox": "test.derp.com",
+                "soa_nameserver": "derpderpderp.com",
+            },
+            serial_number=1234,
+        )
         with open(my_path + "/test.zone.output") as known_zone_f:
             known_zone = known_zone_f.read()
         self.assertEqual(known_zone, new_zone)
