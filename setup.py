@@ -2,9 +2,9 @@ from setuptools import setup
 
 setup(
     name = "edgemanage",
-    version = "2.0.7",
-    author = "Hugh Nowlan",
-    author_email = "nosmo@nosmo.me",
+    version = "2.1.0",
+    author = "Donncha O Cearbhaill",
+    author_email = "donncha@equalit.ie",
     description = "HTTP availability management tool",
     license = "Hacktivismo Enhanced-Source Software License Agreement",
     keywords = "edgemanage deflect DNS",
