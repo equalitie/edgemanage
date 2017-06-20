@@ -6,6 +6,7 @@ from .context import edgemanage
 import tempfile
 import subprocess
 
+
 class UtilTest(unittest.TestCase):
 
     '''Tests for any utility functions'''
@@ -23,12 +24,14 @@ class UtilTest(unittest.TestCase):
             # refused. I am a bad person and you should hate me.
             #
             # This is even more disgusting now tests are in a separate directory!
-            test_lock_fail = subprocess.Popen(
-                ["python", "-c", ("import os; import sys; "
-                "sys.path.insert(0, os.path.abspath('..')); "
-                "import edgemanage; "
-                "ret = edgemanage.util.acquire_lock(open('%s', 'w')); "
-                "sys.exit(0 if not ret else 1)") % temp_file])
+            test_lock_fail = subprocess.Popen([
+                "python", "-c", (
+                    "import os; import sys; "
+                    "sys.path.insert(0, os.path.abspath('..')); "
+                    "import edgemanage; "
+                    "ret = edgemanage.util.acquire_lock(open('%s', 'w')); "
+                    "sys.exit(0 if not ret else 1)"
+                ) % temp_file])
             returncode = test_lock_fail.wait()
             self.assertEqual(returncode, 0,
                              msg="Could lock already locked temporary file")

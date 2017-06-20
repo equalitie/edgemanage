@@ -3,6 +3,8 @@ testobject:
   # The domain to query for the object - used to set the Host header
   # in the GETs
   host: site.com
+  # Port
+  port: 80
   # Query over HTTP or HTTPS?
   proto: https
   # Path to the object to be retrieved
@@ -45,6 +47,9 @@ edgelist_dir: /etc/edgemanage/edges/
 # performed in a 10 minute period
 dnschange_maxfreq: 10
 
+# Number of connections to make in parallel to the edges and canaries
+workers: 10
+
 # Number of retries when fetching the object from an edge
 retry: 3
 
@@ -54,6 +59,12 @@ retry: 3
 # a chance that an edge will be used. See the README for more
 # explanation of how this value is used.
 goodenough: 0.700
+
+# All checks against the canary edges are disabled when this number of
+# edge tests have failed. All canaries for a dnet are typically run on
+# the same server. If many are down, then the whole server is probably
+# unavailable.
+canary_killer: 6
 
 # A file used to maintain state, details about last rotation and the
 # previously in-use edges. This path can and should contain {dnet}

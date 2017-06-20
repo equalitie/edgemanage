@@ -1,9 +1,10 @@
 import json
 import time
 
+
 class StateFile(object):
 
-    ''' A simple stat storage object, a glorified dict '''
+    ''' A simple state storage object, a glorified dict '''
 
     def __init__(self, existing_dict={}):
 
@@ -17,6 +18,8 @@ class StateFile(object):
         self.verification_failues = []
         # A list of mtimes for zonefiles
         self.zone_mtimes = {}
+        # Canary IP addresses in use for given domain
+        self.active_canaries = {}
 
         # Restore any existing saved values - setting values above
         # this means that we can add new values to the state file

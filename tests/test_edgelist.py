@@ -7,6 +7,7 @@ import module_locator
 TEST_DOMAIN = "fakesite.deflect.ca"
 my_path = module_locator.module_path() + "/test_data"
 
+
 class EdgeListTest(unittest.TestCase):
 
     def test_reject_bad_NS(self):
@@ -41,15 +42,14 @@ class EdgeListTest(unittest.TestCase):
     def test_state_operations(self):
         a = edgemanage.EdgeList()
         a.add_edge("test1")
-        a.add_edge("test2", state="pass")
-        a.add_edge("test3", state="pass")
+        a.add_edge("test2", state="pass", live=True)
+        a.add_edge("test3", state="pass", live=True)
         a.add_edge("test4", state="fail")
         # invalid state - edgelist don't care.
         a.add_edge("test5", state="satan")
         a.add_edge("test6", state="pass")
 
         self.assertEqual(a.get_state_stats(), {'fail': 1, None: 1, 'satan': 1, 'pass': 3})
-        self.assertTrue(a.set_live_by_state("pass", 2))
         self.assertEqual(a.get_live_count(), 2)
         self.assertEqual(len(a.get_edges("pass")), 3)
 
@@ -57,11 +57,13 @@ class EdgeListTest(unittest.TestCase):
         a = edgemanage.EdgeList()
         a.add_edge("example.com")
         a.set_edge_live("example.com")
-        new_zone = a.generate_zone("test.com", my_path, {"ns_records": ["adns1.easydns.com."],
-                                                             "soa_mailbox": "test.derp.com",
-                                                             "soa_nameserver": "derpderpderp.com"
-                                                         },
-                                   serial_number=1234)
+        new_zone = a.generate_zone("test.com", my_path, {
+                "ns_records": ["adns1.easydns.com."],
+                "soa_mailbox": "test.derp.com",
+                "soa_nameserver": "derpderpderp.com",
+            },
+            serial_number=1234,
+        )
         with open(my_path + "/test.com.output") as known_zone_f:
             known_zone = known_zone_f.read()
         self.assertEqual(known_zone, new_zone)
@@ -70,11 +72,13 @@ class EdgeListTest(unittest.TestCase):
         a = edgemanage.EdgeList()
         a.add_edge("example.com")
         a.set_edge_live("example.com")
-        new_zone = a.generate_zone("test.zone", my_path, {"ns_records": ["adns1.easydns.com."],
-                                                             "soa_mailbox": "test.derp.com",
-                                                             "soa_nameserver": "derpderpderp.com"
-                                                         },
-                                   serial_number=1234)
+        new_zone = a.generate_zone("test.zone", my_path, {
+                "ns_records": ["adns1.easydns.com."],
+                "soa_mailbox": "test.derp.com",
+                "soa_nameserver": "derpderpderp.com",
+            },
+            serial_number=1234,
+        )
         with open(my_path + "/test.zone.output") as known_zone_f:
             known_zone = known_zone_f.read()
         self.assertEqual(known_zone, new_zone)

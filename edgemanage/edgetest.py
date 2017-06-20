@@ -8,13 +8,17 @@ import const
 
 # external
 import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 # Make requests stop logging so much. I love you but you need to shut
 # up.
 requests_log = logging.getLogger("requests")
 requests_log.setLevel(logging.WARNING)
+# Disable warning when making non-verified HTTPS requests
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-USER_AGENT="Edgemanage v2 (https://github.com/equalitie/edgemanage)"
+USER_AGENT = "Edgemanage v2 (https://github.com/equalitie/edgemanage)"
+
 
 class FetchFailed(Exception):
     def __init__(self, edgetest, fetch_host, fetch_object, reason):
@@ -26,6 +30,7 @@ class FetchFailed(Exception):
         self.local_sum = edgetest.local_sum
         self.fetch_host = fetch_host
         self.fetch_object = fetch_object
+
 
 class VerifyFailed(Exception):
     def __init__(self, edgetest, fetch_host, fetch_object, reason):
@@ -51,18 +56,20 @@ class EdgeTest(object):
         self.edgename = edgename
         self.local_sum = local_sum
 
-    def fetch(self, fetch_host, fetch_object, proto="https", verify=False):
+    def make_request(self, fetch_host, fetch_object, proto, port, verify):
+        request_url = urlparse.urljoin(proto + "://" + self.edgename + ":" + str(port),
+                                       fetch_object)
+        return requests.get(request_url, verify=verify, timeout=const.FETCH_TIMEOUT,
+                            headers={"Host": fetch_host, "User-Agent": USER_AGENT})
+        pass
+
+    def fetch(self, fetch_host, fetch_object, proto="https", port=80, verify=False):
         """
          fetch_host: The Host header to use when fetching
          fetch_object: The path to the object to be fetched
         """
         try:
-            response = requests.get(urlparse.urljoin(proto + "://" + self.edgename,
-                                                     fetch_object),
-                                    verify=verify,
-                                    timeout=const.FETCH_TIMEOUT,
-                                    headers = {"Host": fetch_host,
-                                               "User-Agent": USER_AGENT})
+            response = self.make_request(fetch_host, fetch_object, proto, port, verify)
         except requests.exceptions.Timeout as e:
             # Just assume it took the maximum amount of time
             return const.FETCH_TIMEOUT
@@ -71,11 +78,7 @@ class EdgeTest(object):
             for i in range(const.FETCH_RETRY-1):
                 logging.warning("Retrying connection to %s", self.edgename)
                 try:
-                    response = requests.get(urlparse.urljoin(proto + "://" + self.edgename,
-                                                             fetch_object),
-                                            verify=False,
-                                            timeout=const.FETCH_TIMEOUT,
-                                            headers = {"Host": fetch_host})
+                    response = self.make_request(fetch_host, fetch_object, proto, port, verify)
                     # Request was successful, stop retrying and
                     # continue
                     break
@@ -90,15 +93,13 @@ class EdgeTest(object):
                 return const.FETCH_TIMEOUT
 
         if not response.ok:
-            logging.error("Object fetch failed on %s", self.edgename)
-            raise FetchFailed(self, fetch_host,
-                              fetch_object, response.text)
+            logging.error("Object fetch failed on %s:%s", self.edgename, port)
+            raise FetchFailed(self, fetch_host, fetch_object, response.text)
 
         remote_hash = hashlib.md5(response.content).hexdigest()
 
         if remote_hash != self.local_sum:
             logging.error("Failed to verify hash on %s!!", self.edgename)
-            raise VerifyFailed(self, fetch_host,
-                               fetch_object, remote_hash)
+            raise VerifyFailed(self, fetch_host, fetch_object, remote_hash)
 
         return response.elapsed.total_seconds()

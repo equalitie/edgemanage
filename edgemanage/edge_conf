@@ -8,9 +8,6 @@ Tool for manipulating the state of edges.
  seen in edgemanage/const.py.
 
 """
-
-__author__="nosmo@nosmo.me"
-
 from edgemanage import EdgeState, util
 from edgemanage.const import VALID_MODES, CONFIG_PATH
 
@@ -23,21 +20,30 @@ import sys
 
 import yaml
 
+__author__ = "nosmo@nosmo.me"
+
+
 def main(dnet, edgename, config, mode, comment=None, no_syslog=False):
 
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
-        edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
+        edge_list = [i.strip() for i in edge_f.read().split("\n")
+                     if i.strip() and not i.startswith("#")]
 
     if edgename not in edge_list:
-        raise KeyError("Edge %s is not in the edge list of %s" % (edgename, dnet))
+        raise KeyError("Edge %s is not in the edge list of %s" %
+                       (edgename, dnet))
 
-    if not os.path.exists(os.path.join(config["healthdata_store"], "%s.edgestore" % edgename)):
-        raise Exception("Edge %s is not initialised yet - not setting status" % edgename)
+    if not os.path.exists(os.path.join(config["healthdata_store"],
+                                       "%s.edgestore" % edgename)):
+        raise Exception("Edge %s is not initialised yet - not setting "
+                        "status" % edgename)
 
     try:
-        edge_state = EdgeState(edgename, config["healthdata_store"], nowrite=False)
+        edge_state = EdgeState(edgename, config["healthdata_store"],
+                               nowrite=False)
     except Exception as e:
-        raise SystemExit("failed to load state for edge %s: %s" % (edgename, str(e)))
+        raise SystemExit("failed to load state for edge %s: %s" %
+                         (edgename, str(e)))
 
     edge_state.set_mode(mode)
 
@@ -55,7 +61,8 @@ def main(dnet, edgename, config, mode, comment=None, no_syslog=False):
             logger = logging.getLogger('edge_conf')
             logger.setLevel(logging.INFO)
             logger.addHandler(handler)
-            logger.info("Edge %s changed mode to %s with comment %s", edgename, mode, comment)
+            logger.info("Edge %s changed mode to %s with comment %s",
+                        edgename, mode, comment)
     elif mode == "available":
         edge_state.unset_comment()
 
@@ -65,8 +72,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Configure Deflect edge mode.')
     parser.add_argument("--config", "-c", dest="config_path", action="store",
-                        help="Path to configuration file (defaults to %s)" % CONFIG_PATH,
-                        default=CONFIG_PATH)
+                        help="Path to configuration file (defaults to %s)"
+                        % CONFIG_PATH, default=CONFIG_PATH)
     parser.add_argument("--dnet", "-A", dest="dnet", action="store",
                         help="Specify DNET (mandatory)", required=True)
     parser.add_argument("--no-syslog", dest="nosyslog", action="store_true",
@@ -74,21 +81,21 @@ if __name__ == "__main__":
     parser.add_argument("--comment", "-C", dest="comment", action="store",
                         help=("Comment about your change (required for all "
                               "modes other than available)"))
-    parser.add_argument("--mode", "-m", dest="mode", action="store", default=None,
-                        help="Set mode", required=True,
+    parser.add_argument("--mode", "-m", dest="mode", action="store",
+                        default=None, help="Set mode", required=True,
                         choices=VALID_MODES)
     parser.add_argument("edge", action="store",
                         help="Edge to configure", nargs=1)
     args = parser.parse_args()
 
     if not args.dnet and not args.edge:
-        raise Exception("Arguments must specify either a DNET or a specific edge")
+        raise Exception("Arguments must specify either a DNET or a specific "
+                        "edge")
 
     if args.mode != "available" and not args.comment:
         sys.stderr.write(("Comment required for mode to "
                           "be changed to anything but available.\n"))
         sys.exit(1)
-
 
     with open(args.config_path) as config_f:
         config = yaml.safe_load(config_f.read())

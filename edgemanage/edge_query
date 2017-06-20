@@ -7,10 +7,7 @@
  be seen in edgemanage/const.py.
 
 """
-
-__author__ = "nosmo@nosmo.me"
-
-from edgemanage import EdgeState, util
+from edgemanage import EdgeState
 from edgemanage.const import VALID_MODES, CONFIG_PATH, VALID_HEALTHS
 
 import argparse
@@ -21,11 +18,14 @@ import sys
 
 import yaml
 
+__author__ = "nosmo@nosmo.me"
+
+
 def sep_output(output_tuple, verbose, quiet, header_printed, output_char=" "):
     chosen_fields = []
     header_fields = []
     if verbose:
-        #mode state health edgename duration
+        # mode state health edgename duration
         chosen_fields = output_tuple
         header_fields = ["mode", "state", "health", "edgename", "duration", "comment"]
     elif quiet:
@@ -39,6 +39,7 @@ def sep_output(output_tuple, verbose, quiet, header_printed, output_char=" "):
         print output_char.join(header_fields)
     print output_char.join(chosen_fields)
     return True
+
 
 def json_output(output_tuple, verbose, quiet):
     # This is really dumb why just recreate a diction ah who cares
@@ -54,11 +55,12 @@ def json_output(output_tuple, verbose, quiet):
 
     print json.dumps(output_dict)
 
+
 def main(args):
 
     with open(os.path.join(config["edgelist_dir"], args.dnet)) as edge_f:
-        edge_list = [ i.strip() for i in edge_f.read().split("\n") \
-                      if i.strip() and not i.startswith("#") ]
+        edge_list = [i.strip() for i in edge_f.read().split("\n")
+                     if i.strip() and not i.startswith("#")]
 
     output_data = []
 
@@ -124,7 +126,8 @@ if __name__ == "__main__":
                         help="Specify output format.", default="flat",
                         choices=["flat", "csv", "json"])
     parser.add_argument("--quiet", "-q", dest="quiet", action="store_true",
-                        help="List hostnames only, without details or state duration", default=False)
+                        help="List hostnames only, without details or state duration",
+                        default=False)
     parser.add_argument("--header", dest="header", action="store_true",
                         help="Print a header explaining the column outputs")
     parser.add_argument("--verbose", "-v", dest="verbose", action="store_true",
