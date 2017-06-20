@@ -254,6 +254,28 @@ class EdgeManage(object):
 
         return list(set(still_healthy))
 
+    def get_fastest_edges_by_state(self, edge_list, state, desired_count):
+        """
+        Get the top `desired_count` fastest edges with the specified state
+        """
+        edges_in_state = [edge for edge in edge_list
+                          if self.decision.get_judgement(edge) == state]
+
+        # Sort the list of edges with specified state
+        edge_list = sorted(edges_in_state,
+                           key=lambda edge: self.decision.edge_average(edge))
+
+        logging.debug("Sorted %s edges: %s", state, edge_list)
+
+        choosen_edges = []
+        for edge in edge_list:
+            if len(choosen_edges) == desired_count:
+                logging.debug("Edgemanage got enough (%d) edges in state %s",
+                              desired_count, state)
+                break
+            choosen_edges.append(edge)
+        return choosen_edges
+
     def make_edges_live(self, force_update):
 
         '''
@@ -334,17 +356,24 @@ class EdgeManage(object):
             edgelist_changed = True
 
             # This loops over the non-canary edges
+            remaining_edges = []
             for decision_edge, edge_state in self.decision.current_judgement.iteritems():
                 if decision_edge not in self.edgelist_obj.edges:
-                    self.edgelist_obj.add_edge(decision_edge, state=edge_state)
+                    remaining_edges.append(decision_edge)
+
             logging.debug("List of previously passing edges is currently %s",
                           self.edgelist_obj.get_live_edges())
 
             # Attempt to meet demand starting with the most responsive edge states
             for desired_state in ["pass_threshold", "pass_window", "pass_average", "pass"]:
-                filled_by_current_state = self.edgelist_obj.set_live_by_state(desired_state,
-                                                                              required_edge_count)
-                if filled_by_current_state:
+                needed_edges = required_edge_count - self.edgelist_obj.get_live_count()
+                filled_by_current_state = self.get_fastest_edges_by_state(remaining_edges,
+                                                                          desired_state,
+                                                                          needed_edges)
+                for edge in filled_by_current_state:
+                    self.edgelist_obj.add_edge(edge, state=desired_state, live=True)
+
+                if self.edgelist_obj.get_live_count() == required_edge_count:
                     logging.info("Filled requirement for %d edges with edges in state %s",
                                  required_edge_count, desired_state)
                     break

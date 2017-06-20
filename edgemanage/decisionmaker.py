@@ -23,6 +23,9 @@ class DecisionMaker(object):
     def edge_is_passing(self, edgename):
         return self.get_judgement(edgename) != "fail"
 
+    def edge_average(self, edgename):
+        return self.edge_states[edgename].current_average()
+
     def check_threshold(self, good_enough):
 
         ''' Check fetch response times for being under the given

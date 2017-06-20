@@ -42,15 +42,14 @@ class EdgeListTest(unittest.TestCase):
     def test_state_operations(self):
         a = edgemanage.EdgeList()
         a.add_edge("test1")
-        a.add_edge("test2", state="pass")
-        a.add_edge("test3", state="pass")
+        a.add_edge("test2", state="pass", live=True)
+        a.add_edge("test3", state="pass", live=True)
         a.add_edge("test4", state="fail")
         # invalid state - edgelist don't care.
         a.add_edge("test5", state="satan")
         a.add_edge("test6", state="pass")
 
         self.assertEqual(a.get_state_stats(), {'fail': 1, None: 1, 'satan': 1, 'pass': 3})
-        self.assertTrue(a.set_live_by_state("pass", 2))
         self.assertEqual(a.get_live_count(), 2)
         self.assertEqual(len(a.get_edges("pass")), 3)
 
