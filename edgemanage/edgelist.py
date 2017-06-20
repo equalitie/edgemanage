@@ -66,23 +66,6 @@ class EdgeList(object):
     def set_edge_live(self, edgename):
         self.edges[edgename]["live"] = True
 
-    def set_live_by_state(self, state, desired_count):
-
-        # return value that indicates whether we satisfied the
-        # condition of setting $desired_count hosts of $state to live
-        met_demand = False
-        edge_list = self.get_edges(state)
-        random.shuffle(edge_list)
-        for edge in edge_list:
-            if self.get_live_count() == desired_count:
-                logging.debug("Edgelist got enough (%d) edges in state %s",
-                              desired_count, state)
-                met_demand = True
-                break
-            self.set_edge_live(edge)
-
-        return met_demand
-
     def get_edges(self, state=None):
         ''' return a list of edges, with the option to filter by state '''
         if state:

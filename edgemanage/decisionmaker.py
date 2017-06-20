@@ -20,6 +20,12 @@ class DecisionMaker(object):
     def get_judgement(self, edgename):
         return self.current_judgement[edgename]
 
+    def edge_is_passing(self, edgename):
+        return self.get_judgement(edgename) != "fail"
+
+    def edge_average(self, edgename):
+        return self.edge_states[edgename].current_average()
+
     def check_threshold(self, good_enough):
 
         ''' Check fetch response times for being under the given
@@ -54,32 +60,33 @@ class DecisionMaker(object):
                               edgename, edge_state.last_value(), edge_state.current_average())
 
             if edge_state.last_value() < good_enough:
-                logging.info("PASS: Last fetch for %s is under the threshold (%f < %f)", edgename,
-                             edge_state.last_value(), good_enough)
-                self.current_judgement[edgename] = "pass"
-                results_dict["pass"] += 1
-            elif edge_state.last_value() == const.FETCH_TIMEOUT:
-                results_dict["fail"] += 1
-                self.current_judgement[edgename] = "fail"
-                logging.info(("FAIL: Fetch time for %s is equal to the FETCH_TIMEOUT of %d. "
-                              "Automatic fail"),
-                             edgename, const.FETCH_TIMEOUT)
+                self.current_judgement[edgename] = "pass_threshold"
+                results_dict["pass_threshold"] += 1
+                logging.info("PASS: Last fetch for %s is under the good_enough threshold "
+                             "(%f < %f)", edgename, edge_state.last_value(), good_enough)
             elif time_slice and time_slice_avg < good_enough:
                 self.current_judgement[edgename] = "pass_window"
                 results_dict["pass_window"] += 1
-                logging.info("UNSURE: Last fetch for %s is NOT under the threshold but the "
-                             "average of the last %d items is (%f < %f)",
+                logging.info("UNSURE: Last fetch for %s is NOT under the good_enough threshold "
+                             "but the average of the last %d items is (%f < %f)",
                              edgename, len(time_slice), time_slice_avg, good_enough)
             elif edge_state.current_average() < good_enough:
-                results_dict["pass_average"] += 1
                 self.current_judgement[edgename] = "pass_average"
-                logging.info("UNSURE: Last fetch for %s is NOT under the threshold but under "
-                             "the average (%f < %f)",
+                results_dict["pass_average"] += 1
+                logging.info("UNSURE: Last fetch for %s is NOT under the good_enough threshold "
+                             "but under the average (%f < %f)",
                              edgename, edge_state.current_average(), good_enough)
+            elif edge_state.last_value() < const.FETCH_TIMEOUT:
+                self.current_judgement[edgename] = "pass"
+                results_dict["pass"] += 1
+                logging.info("PASS: Last fetch for %s is not under the good_enough threshold "
+                             "but is passing (%f < %f)", edgename,
+                             edge_state.last_value(), const.FETCH_TIMEOUT)
             else:
-                results_dict["fail"] += 1
                 self.current_judgement[edgename] = "fail"
-                logging.info("FAIL: No check for %s has passed - last fetch time was %f",
-                             edgename, edge_state.last_value())
+                results_dict["fail"] += 1
+                logging.info(("FAIL: Fetch time for %s is equal to the FETCH_TIMEOUT of %d. "
+                              "Automatic fail"),
+                             edgename, const.FETCH_TIMEOUT)
 
         return results_dict

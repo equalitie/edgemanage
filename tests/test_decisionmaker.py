@@ -14,12 +14,17 @@ class DecisionMakerTest(EdgeStateTemplate):
 
     def _get_failing_edge_state(self):
         es = self._make_store()
-        es.add_value(GOOD_ENOUGH * 2)
+        es.add_value(edgemanage.const.FETCH_TIMEOUT)
+        return es
+
+    def _get_good_enough_edge_state(self):
+        es = self._make_store()
+        es.add_value(GOOD_ENOUGH/10)
         return es
 
     def _get_passing_edge_state(self):
         es = self._make_store()
-        es.add_value(GOOD_ENOUGH/10)
+        es.add_value(GOOD_ENOUGH*2)
         return es
 
     def _get_error_edge_state(self):
@@ -31,16 +36,28 @@ class DecisionMakerTest(EdgeStateTemplate):
         es = self._get_error_edge_state()
         dm = edgemanage.decisionmaker.DecisionMaker()
         dm.add_edge_state(es)
-        self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {"fail": 1,
+        self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {'fail': 1,
+                                                           'pass_threshold': 0,
                                                            'pass_window': 0,
                                                            'pass_average': 0,
                                                            'pass': 0})
 
-    def test_good_state(self):
+    def test_good_enough_state(self):
+        es = self._get_good_enough_edge_state()
+        dm = edgemanage.decisionmaker.DecisionMaker()
+        dm.add_edge_state(es)
+        self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {'fail': 0,
+                                                           'pass_threshold': 1,
+                                                           'pass_window': 0,
+                                                           'pass_average': 0,
+                                                           'pass': 0})
+
+    def test_passing_state(self):
         es = self._get_passing_edge_state()
         dm = edgemanage.decisionmaker.DecisionMaker()
         dm.add_edge_state(es)
-        self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {"fail": 0,
+        self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {'fail': 0,
+                                                           'pass_threshold': 0,
                                                            'pass_window': 0,
                                                            'pass_average': 0,
                                                            'pass': 1})
@@ -49,7 +66,8 @@ class DecisionMakerTest(EdgeStateTemplate):
         es = self._get_failing_edge_state()
         dm = edgemanage.decisionmaker.DecisionMaker()
         dm.add_edge_state(es)
-        self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {"fail": 1,
+        self.assertEqual(dm.check_threshold(GOOD_ENOUGH), {'fail': 1,
+                                                           'pass_threshold': 0,
                                                            'pass_window': 0,
                                                            'pass_average': 0,
                                                            'pass': 0})

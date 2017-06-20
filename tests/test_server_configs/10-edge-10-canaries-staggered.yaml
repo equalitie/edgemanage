@@ -1,0 +1,41 @@
+edge_list:
+  1:
+    delay: 0.1
+  2:
+    delay: 0.2
+  3:
+    delay: 1
+  4:
+    delay: 2
+  5:
+    delay: 3
+  6:
+    delay: 4
+  7:
+    delay: 5
+  8:
+    delay: 6
+  9:
+    delay: 7
+  10:
+    delay: 8
+  101:
+    delay: 0.1
+  102:
+    delay: 0.2
+  103:
+    delay: 1
+  104:
+    delay: 2
+  105:
+    delay: 3
+  106:
+    delay: 4
+  107:
+    delay: 5
+  108:
+    delay: 6
+  109:
+    delay: 7
+  110:
+    delay: 8
