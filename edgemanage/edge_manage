@@ -198,7 +198,7 @@ if __name__ == "__main__":
 
     time_now = time.time()
     if state.last_run and not args.dryrun and \
-       int(state.last_run) + 50 > int(time_now) and not args.force:
+       int(state.last_run) + 30 > int(time_now) and not args.force:
         logging.error(("Can't run - last run was %d, current time is %d. Bypass"
                        " this check at your own risk with --force"),
                       state.last_run, time_now)
