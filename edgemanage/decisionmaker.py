@@ -64,6 +64,15 @@ class DecisionMaker(object):
                 results_dict["pass_threshold"] += 1
                 logging.info("PASS: Last fetch for %s is under the good_enough threshold "
                              "(%f < %f)", edgename, edge_state.last_value(), good_enough)
+            elif edge_state.last_value() == const.FETCH_TIMEOUT:
+                # FETCH_TIMEOUT must be checked before the average measurements. An edge
+                # whose most recent fetch has failed should be marked as fail even if
+                # the average value is still passing.
+                self.current_judgement[edgename] = "fail"
+                results_dict["fail"] += 1
+                logging.info(("FAIL: Fetch time for %s is equal to the FETCH_TIMEOUT of %d. "
+                              "Automatic fail"),
+                             edgename, const.FETCH_TIMEOUT)
             elif time_slice and time_slice_avg < good_enough:
                 self.current_judgement[edgename] = "pass_window"
                 results_dict["pass_window"] += 1
@@ -76,17 +85,11 @@ class DecisionMaker(object):
                 logging.info("UNSURE: Last fetch for %s is NOT under the good_enough threshold "
                              "but under the average (%f < %f)",
                              edgename, edge_state.current_average(), good_enough)
-            elif edge_state.last_value() < const.FETCH_TIMEOUT:
+            else:
                 self.current_judgement[edgename] = "pass"
                 results_dict["pass"] += 1
                 logging.info("PASS: Last fetch for %s is not under the good_enough threshold "
                              "but is passing (%f < %f)", edgename,
                              edge_state.last_value(), const.FETCH_TIMEOUT)
-            else:
-                self.current_judgement[edgename] = "fail"
-                results_dict["fail"] += 1
-                logging.info(("FAIL: Fetch time for %s is equal to the FETCH_TIMEOUT of %d. "
-                              "Automatic fail"),
-                             edgename, const.FETCH_TIMEOUT)
 
         return results_dict
