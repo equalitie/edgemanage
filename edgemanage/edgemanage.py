@@ -342,27 +342,24 @@ class EdgeManage(object):
                 # list doesn't ignore forced or blindforced edges.
                 edgelist_changed = False
 
-        for still_healthy in still_healthy_from_last_run:
-            if len(self.edgelist_obj) < required_edge_count:
-                self.edgelist_obj.add_edge(still_healthy, state="pass", live=True)
-
         if len(still_healthy_from_last_run) == required_edge_count:
             logging.info(
                 "Old edge list is still healthy - not making any changes"
             )
+            for still_healthy in sorted(still_healthy_from_last_run):
+                if len(self.edgelist_obj) < required_edge_count:
+                    self.edgelist_obj.add_edge(still_healthy, state="pass", live=True)
+
         else:
             logging.debug(("Didn't have enough healthy edges from last run to meet "
-                           "edge count - trying to add more edges"))
+                           "edge count - picking a new set of edges"))
             edgelist_changed = True
 
-            # This loops over the non-canary edges
+            # Get list of edges which are not in the edgelist yet.
             remaining_edges = []
-            for decision_edge, edge_state in self.decision.current_judgement.iteritems():
+            for decision_edge in self.decision.current_judgement.keys():
                 if decision_edge not in self.edgelist_obj.edges:
                     remaining_edges.append(decision_edge)
-
-            logging.debug("List of previously passing edges is currently %s",
-                          self.edgelist_obj.get_live_edges())
 
             # Attempt to meet demand starting with the most responsive edge states
             for desired_state in ["pass_threshold", "pass_window", "pass_average", "pass"]:
