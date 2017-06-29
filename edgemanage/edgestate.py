@@ -86,6 +86,7 @@ class EdgeState(object):
         # prevent edgemanage from running.
         with open_atomic(self.statfile, mode="w") as statfile_f:
             json.dump(output, statfile_f, sort_keys=True, indent=4)
+        os.chmod(self.statfile, 0644)
 
     def set_comment(self, comment):
         self.comment = comment
