@@ -75,8 +75,13 @@ def main(args):
             continue
 
         interested = True
-        if args.health and edge_state.health != args.health:
-            interested = False
+        if args.health:
+            if args.health == "allpass":
+                if edge_state.health == "fail":
+                    interested = False
+            else:
+                if edge_state.health != args.health:
+                    interested = False
         if args.state and edge_state.state != args.state:
             interested = False
         if args.mode and edge_state.mode != args.mode:
@@ -115,7 +120,7 @@ if __name__ == "__main__":
                         default=CONFIG_PATH)
     parser.add_argument("--health", "-H", dest="health", action="store", default=None,
                         help="Restrict output by edge health",
-                        choices=VALID_HEALTHS)
+                        choices=["allpass"] + VALID_HEALTHS)
     parser.add_argument("--state", "-s", dest="state", action="store", default=None,
                         help="Restrict output by edge state",
                         choices=["out", "in"])
