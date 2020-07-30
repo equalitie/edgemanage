@@ -7,6 +7,8 @@
  be seen in edgemanage/const.py.
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 from edgemanage import EdgeState
 from edgemanage.const import VALID_MODES, CONFIG_PATH, VALID_HEALTHS
 
@@ -36,8 +38,8 @@ def sep_output(output_tuple, verbose, quiet, header_printed, output_char=" "):
         chosen_fields = (output_tuple[3], output_tuple[4])
 
     if header_printed is False:
-        print output_char.join(header_fields)
-    print output_char.join(chosen_fields)
+        print(output_char.join(header_fields))
+    print(output_char.join(chosen_fields))
     return True
 
 
@@ -53,7 +55,7 @@ def json_output(output_tuple, verbose, quiet):
         output_dict["health"] = output_tuple[2]
         output_dict["state"] = output_tuple[1]
 
-    print json.dumps(output_dict)
+    print(json.dumps(output_dict))
 
 
 def main(args):
