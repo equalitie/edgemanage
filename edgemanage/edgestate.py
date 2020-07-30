@@ -143,7 +143,7 @@ class EdgeState(object):
         if isinstance(index, slice):
             return_dict = {}
             for key, val in six.iteritems(self.fetch_times):
-                if key >= index.start and key <= index.stop:
+                if float(key) >= index.start and float(key) <= index.stop:
                     return_dict[key] = val
 
             return return_dict
