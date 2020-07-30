@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 from .edgetest import EdgeTest, VerifyFailed, FetchFailed
 from .edgestate import EdgeState
 from .decisionmaker import DecisionMaker
 from .edgelist import EdgeList
-import const
+from . import const
 
 from concurrent.futures import ThreadPoolExecutor, as_completed, CancelledError
 import itertools
@@ -13,6 +14,7 @@ import traceback
 import hashlib
 import logging
 import os
+import six
 
 
 def future_fetch(edgetest, testobject_host, testobject_path,
@@ -163,7 +165,7 @@ class EdgeManage(object):
                                                   test_verify)
 
                 # Check if the current edge is a canary edge
-                if edgename not in self.canary_data.values():
+                if edgename not in list(self.canary_data.values()):
                     edgescore_futures.append(edgetest_future)
                 else:
                     canary_futures.append(edgetest_future)
@@ -176,7 +178,7 @@ class EdgeManage(object):
                     # Do not try and process canceled edge tests
                     continue
 
-                edge, value = result.items()[0]
+                edge, value = list(result.items())[0]
                 fetch_result, fetch_status = value
 
                 if fetch_status == "verify_failed":
@@ -200,7 +202,7 @@ class EdgeManage(object):
                                   edge)
                 else:
                     # otherwise add it to the appropriate decision maker
-                    if edge in self.canary_data.values():
+                    if edge in list(self.canary_data.values()):
                         self.canary_decision.add_edge_state(self.edge_states[edge])
                     elif edge in self.edge_states:
                         self.decision.add_edge_state(self.edge_states[edge])
@@ -308,8 +310,8 @@ class EdgeManage(object):
         # still healthy (under the good_enough threshold)
         still_healthy_from_last_run = self.check_last_live()
 
-        for edgename, edge_state in self.edge_states.iteritems():
-            if edgename not in self.canary_data.values() and edge_state.mode == "force":
+        for edgename, edge_state in six.iteritems(self.edge_states):
+            if edgename not in list(self.canary_data.values()) and edge_state.mode == "force":
                 if self.decision.edge_is_passing(edgename):
                     logging.debug(
                         "Making host %s live because it is in mode force and it is in state pass",
@@ -321,7 +323,7 @@ class EdgeManage(object):
                         self.edgelist_obj.add_edge(edgename, state="pass", live=True)
                         edgelist_changed = True
 
-            elif edgename not in self.canary_data.values() and edge_state.mode == "blindforce":
+            elif edgename not in list(self.canary_data.values()) and edge_state.mode == "blindforce":
                 logging.debug("Making host %s live because it is in mode blindforce.",
                               edgename)
                 self.edgelist_obj.add_edge(edgename, state="pass", live=True)
@@ -357,7 +359,7 @@ class EdgeManage(object):
 
             # This loops over the non-canary edges
             remaining_edges = []
-            for decision_edge, edge_state in self.decision.current_judgement.iteritems():
+            for decision_edge, edge_state in six.iteritems(self.decision.current_judgement):
                 if decision_edge not in self.edgelist_obj.edges:
                     remaining_edges.append(decision_edge)
 
@@ -496,7 +498,7 @@ class EdgeManage(object):
         # Note in the statefile that this edge has been put into rotation
         for edge in self.edge_states:
             try:
-                if edge in self.canary_data.values():
+                if edge in list(self.canary_data.values()):
                     is_canary = True
                     current_health = self.canary_decision.get_judgement(edge)
                 else:

@@ -4,3 +4,4 @@ Jinja2>=2.8.1
 PyYAML
 requests
 setproctitle==1.1.10
+six

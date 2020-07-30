@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import json
 import time
@@ -5,8 +6,9 @@ import logging
 import datetime
 import copy
 
-from const import FETCH_HISTORY, VALID_MODES, VALID_HEALTHS
-from util import open_atomic
+from .const import FETCH_HISTORY, VALID_MODES, VALID_HEALTHS
+from .util import open_atomic
+import six
 
 ASSUMED_VALS = {
     # A list of timestamps of when this edge has been in rotation
@@ -51,7 +53,7 @@ class EdgeState(object):
                     # Default to creating a new empty state file if current file is invalid
                     stat_info = {}
 
-            for val_key, val_type in ASSUMED_VALS.iteritems():
+            for val_key, val_type in six.iteritems(ASSUMED_VALS):
                 # Set self attributes for all dict vals in the stat
                 # store.
                 try:
@@ -68,7 +70,7 @@ class EdgeState(object):
         else:
             # There is no stat file, just load empty assumed vals
             logging.warning("Initialising previously untracked edge %s", self.edgename)
-            for val_key, val_type in ASSUMED_VALS.iteritems():
+            for val_key, val_type in six.iteritems(ASSUMED_VALS):
                 setattr(self, val_key, copy.copy(val_type))
 
     def _dump(self):
@@ -79,14 +81,14 @@ class EdgeState(object):
             logging.debug("Not writing %s because nowrite=True", self.statfile)
             return
 
-        for val_key, val_type in ASSUMED_VALS.iteritems():
+        for val_key, val_type in six.iteritems(ASSUMED_VALS):
             output[val_key] = getattr(self, val_key)
         # The statfile must be written atomically to prevent file corruption
         # if edgemanage is kiled during the write. A broken statfile will
         # prevent edgemanage from running.
         with open_atomic(self.statfile, mode="w") as statfile_f:
             json.dump(output, statfile_f, sort_keys=True, indent=4)
-        os.chmod(self.statfile, 0644)
+        os.chmod(self.statfile, 0o644)
 
     def set_comment(self, comment):
         self.comment = comment
@@ -140,7 +142,7 @@ class EdgeState(object):
         '''
         if isinstance(index, slice):
             return_dict = {}
-            for key, val in self.fetch_times.iteritems():
+            for key, val in six.iteritems(self.fetch_times):
                 if key >= index.start and key <= index.stop:
                     return_dict[key] = val
 

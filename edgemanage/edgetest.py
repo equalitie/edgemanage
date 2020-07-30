@@ -1,14 +1,16 @@
 # stdlib
-import urlparse
+from __future__ import absolute_import
+import six.moves.urllib.parse
 import hashlib
 import logging
 
 # local
-import const
+from . import const
 
 # external
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from six.moves import range
 
 # Make requests stop logging so much. I love you but you need to shut
 # up.
@@ -57,7 +59,7 @@ class EdgeTest(object):
         self.local_sum = local_sum
 
     def make_request(self, fetch_host, fetch_object, proto, port, verify):
-        request_url = urlparse.urljoin(proto + "://" + self.edgename + ":" + str(port),
+        request_url = six.moves.urllib.parse.urljoin(proto + "://" + self.edgename + ":" + str(port),
                                        fetch_object)
         return requests.get(request_url, verify=verify, timeout=const.FETCH_TIMEOUT,
                             headers={"Host": fetch_host, "User-Agent": USER_AGENT})

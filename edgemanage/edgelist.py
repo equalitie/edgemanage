@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import logging
 import time
 from collections import Counter
@@ -6,6 +7,7 @@ import socket
 import os
 
 from jinja2 import Environment, PackageLoader, FileSystemLoader
+import six
 
 try:
     env = Environment(loader=PackageLoader('edgemanage', 'templates'))
@@ -34,7 +36,7 @@ class EdgeList(object):
         }
 
     def __len__(self):
-        return len(self.edges.keys())
+        return len(list(self.edges.keys()))
 
     def get_state_stats(self):
         counter = Counter([edge["state"] for edge in self.edges.values()])
@@ -57,7 +59,7 @@ class EdgeList(object):
 
     def get_edges_by_liveness(self, islive):
         edge_list = []
-        for edge, state_dict in self.edges.iteritems():
+        for edge, state_dict in six.iteritems(self.edges):
 
             if state_dict["live"] == islive:
                 edge_list.append(edge)
@@ -71,7 +73,7 @@ class EdgeList(object):
         if state:
             return [edge for edge in self.edges if self.edges[edge]['state'] == state]
         else:
-            return self.edges.keys()
+            return list(self.edges.keys())
 
     def get_random_edge(self, state=None):
         selected_edges = self.get_edges(state)

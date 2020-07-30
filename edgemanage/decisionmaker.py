@@ -1,7 +1,9 @@
-import const
+from __future__ import absolute_import
+from . import const
 
 import logging
 import time
+import six
 
 
 class DecisionMaker(object):
@@ -46,7 +48,7 @@ class DecisionMaker(object):
             logging.info("FAIL: %d edges have been disabled", results_dict["fail"])
             return results_dict
 
-        for edgename, edge_state in self.edge_states.iteritems():
+        for edgename, edge_state in six.iteritems(self.edge_states):
             time_slice = edge_state[time.time() - const.DECISION_SLICE_WINDOW:time.time()]
             if time_slice:
                 time_slice_avg = sum(time_slice)/len(time_slice)

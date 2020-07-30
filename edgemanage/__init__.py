@@ -1,9 +1,10 @@
 # flake8: noqa
-import const
-import util
-from edgetest import *
-from edgelist import EdgeList
-from edgestate import EdgeState
-from decisionmaker import DecisionMaker
-from statefile import StateFile
-from edgemanage import EdgeManage
+from __future__ import absolute_import
+from . import const
+from . import util
+from .edgetest import *
+from .edgelist import EdgeList
+from .edgestate import EdgeState
+from .decisionmaker import DecisionMaker
+from .statefile import StateFile
+from .edgemanage import EdgeManage

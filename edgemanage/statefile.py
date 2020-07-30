@@ -1,5 +1,7 @@
+from __future__ import absolute_import
 import json
 import time
+import six
 
 
 class StateFile(object):
@@ -24,7 +26,7 @@ class StateFile(object):
         # Restore any existing saved values - setting values above
         # this means that we can add new values to the state file
         # without any worries of them saving.
-        for key, val in existing_dict.iteritems():
+        for key, val in six.iteritems(existing_dict):
             setattr(self, key, val)
 
     def set_last_run(self):
