@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 
 from __future__ import absolute_import
-from .edgetest import EdgeTest, VerifyFailed, FetchFailed
-from .edgestate import EdgeState
-from .decisionmaker import DecisionMaker
-from .edgelist import EdgeList
-from . import const
+from edgemanage.edgetest import EdgeTest, VerifyFailed, FetchFailed
+from edgemanage import EdgeState, DecisionMaker, EdgeList, const
 
 from concurrent.futures import ThreadPoolExecutor, as_completed, CancelledError
 import itertools

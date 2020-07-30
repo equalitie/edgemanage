@@ -6,8 +6,8 @@ import logging
 import datetime
 import copy
 
-from .const import FETCH_HISTORY, VALID_MODES, VALID_HEALTHS
-from .util import open_atomic
+from edgemanage.const import FETCH_HISTORY, VALID_MODES, VALID_HEALTHS
+from edgemanage.util import open_atomic
 import six
 
 ASSUMED_VALS = {

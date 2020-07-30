@@ -8,6 +8,8 @@ Tool for manipulating the state of edges.
  seen in edgemanage/const.py.
 
 """
+from __future__ import absolute_import
+from __future__ import print_function
 from edgemanage import EdgeState, util
 from edgemanage.const import VALID_MODES, CONFIG_PATH
 
@@ -66,7 +68,7 @@ def main(dnet, edgename, config, mode, comment=None, no_syslog=False):
     elif mode == "available":
         edge_state.unset_comment()
 
-    print "Set mode for %s to %s" % (edgename, mode)
+    print("Set mode for %s to %s" % (edgename, mode))
 
 if __name__ == "__main__":
 
