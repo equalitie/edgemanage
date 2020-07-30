@@ -8,3 +8,4 @@ build/
 dist/
 edgemanage.egg-info/
 htmlcov/
+venv3

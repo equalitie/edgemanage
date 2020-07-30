@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from setuptools import setup
 
 setup(
@@ -16,9 +17,9 @@ setup(
         "Jinja2",
         "setproctitle",
         "pyyaml",
-        "futures",
         "requests",
-        "ipaddr"
+        "ipaddr",
+        "six"
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
