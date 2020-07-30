@@ -59,7 +59,7 @@ class EdgeManage(object):
 
     def get_testobject_hash(self):
         # Hash the local copy of the object to be requested from the edges
-        with open(self.config["testobject"]["local"]) as test_local_f:
+        with open(self.config["testobject"]["local"], 'rb') as test_local_f:
             testobject_hash = hashlib.md5(test_local_f.read()).hexdigest()
             logging.info("Hash of local object %s is %s",
                          self.config["testobject"]["local"], testobject_hash)
