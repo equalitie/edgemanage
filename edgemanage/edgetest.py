@@ -5,7 +5,7 @@ import hashlib
 import logging
 
 # local
-from . import const
+from edgemanage import const
 
 # external
 import requests

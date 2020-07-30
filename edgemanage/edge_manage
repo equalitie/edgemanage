@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 from edgemanage import const, EdgeManage, StateFile, util
 
 import argparse
@@ -16,6 +17,7 @@ import pkg_resources
 
 import ipaddr
 import setproctitle
+import six
 
 __author__ = "nosmo@nosmo.me"
 
@@ -27,7 +29,7 @@ def daemon_setup():
         if pid > 0:
             # exit first parent
             sys.exit(0)
-    except OSError, e:
+    except OSError as e:
         sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
         sys.exit(1)
 
@@ -43,15 +45,15 @@ def daemon_setup():
         if pid > 0:
             # exit if second parent
             sys.exit(0)
-    except OSError, e:
+    except OSError as e:
         sys.stderr.write("Second fork failed: %d (%s)\n" % (e.errno, e.strerror))
         sys.exit(1)
 
     # redirect standard file descriptors
     sys.stdout.flush()
     sys.stderr.flush()
-    si = file("/dev/null", 'r')
-    so = file("/dev/null", 'a+')
+    si = open("/dev/null", 'r')
+    so = open("/dev/null", 'a+')
     # se = file("/dev/null", 'a+', 0)
     os.dup2(si.fileno(), sys.stdin.fileno())
     os.dup2(so.fileno(), sys.stdout.fileno())
@@ -238,7 +240,7 @@ if __name__ == "__main__":
     if canary_data:
         # Validate list of canary edgenames
         bad_canaries = []
-        for canary_site, canary_ip in canary_data.iteritems():
+        for canary_site, canary_ip in six.iteritems(canary_data):
             try:
                 ipaddr_canary = ipaddr.IPAddress(canary_ip)
             except ValueError as exc:
