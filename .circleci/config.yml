@@ -1,0 +1,14 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/equalitie/edgemanage
+    parallelism: 1
+    docker:
+    - image: circleci/python:2.7
+    steps:
+    - checkout
+    - run: apt-get install python-yaml python-requests python-jinja2 python-concurrent.futures python-setuptools python-setproctitle build-essential
+    - run: python setup.py install
+    - run: tox
+    # Copy coverage output to the artifacts directory
+    - run: cp -R htmlcov $CIRCLE_ARTIFACTS
