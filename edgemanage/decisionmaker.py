@@ -28,6 +28,26 @@ class DecisionMaker(object):
     def edge_average(self, edgename):
         return self.edge_states[edgename].current_average()
 
+    def edge_state_slice(self, edge_state):
+        """
+        Slice edge_state.fetch_times base on const.DECISION_SLICE_WINDOW
+
+        Note: This is a fix for
+
+            time_slice = edge_state[time.time() - const.DECISION_SLICE_WINDOW:time.time()]
+
+        """
+        sliced = {}
+        upper_bound = time.time()
+        lower_bound = upper_bound - const.DECISION_SLICE_WINDOW
+
+        for ts, fetch_time in six.iteritems(edge_state.fetch_times):
+            if float(ts) >= lower_bound and float(ts) <= upper_bound:
+                sliced[ts] = fetch_time
+
+        return sliced
+
+
     def check_threshold(self, good_enough):
 
         ''' Check fetch response times for being under the given
@@ -49,9 +69,9 @@ class DecisionMaker(object):
             return results_dict
 
         for edgename, edge_state in six.iteritems(self.edge_states):
-            time_slice = edge_state[time.time() - const.DECISION_SLICE_WINDOW:time.time()]
+            time_slice = self.edge_state_slice(edge_state)
             if time_slice:
-                time_slice_avg = sum(time_slice)/len(time_slice)
+                time_slice_avg = sum(time_slice.values()) / len(time_slice)
                 logging.debug("Analysing %s. Last val: %f, time slice: %f, average: %f",
                               edgename, edge_state.last_value(), time_slice_avg,
                               edge_state.current_average())
