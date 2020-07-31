@@ -1,4 +1,4 @@
-ipaddr==2.1.11
+ipaddr==2.2.0
 Jinja2>=2.8.1
 PyYAML
 requests
