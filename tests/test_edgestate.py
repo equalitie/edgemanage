@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import unittest
 import tempfile
 import shutil
 import time
 
 from .context import edgemanage
+from six.moves import range
 
 TEST_EDGE = "testedge1"
 TEST_FETCH_HISTORY = 4

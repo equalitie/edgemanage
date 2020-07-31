@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
 import os
 import glob
 import shutil
@@ -11,6 +12,7 @@ import time
 import collections
 
 import pexpect
+from six.moves import range
 
 # Offset ID for the canary edges on the web server
 CANARY_ID_OFFSET = 100

@@ -10,8 +10,10 @@
 # my_path = module_locator.module_path()
 
 
+from __future__ import absolute_import
 import os
 import sys
+import six
 
 
 def we_are_frozen():
@@ -23,5 +25,5 @@ def module_path():
     # Return the absolute filesystem path to this module
     encoding = sys.getfilesystemencoding()
     if we_are_frozen():
-        return os.path.dirname(unicode(sys.executable, encoding))
-    return os.path.dirname(unicode(__file__, encoding))
+        return os.path.dirname(six.text_type(sys.executable, encoding))
+    return os.path.dirname(six.text_type(__file__, encoding))

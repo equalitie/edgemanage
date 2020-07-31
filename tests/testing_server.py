@@ -2,6 +2,7 @@
 """
 Simple HTTP server to serve content with a variable response per host
 """
+from __future__ import absolute_import
 import os
 import time
 import yaml

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import unittest
 from .context import edgemanage
-import module_locator
+from . import module_locator
 
 TEST_DOMAIN = "fakesite.deflect.ca"
 my_path = module_locator.module_path() + "/test_data"

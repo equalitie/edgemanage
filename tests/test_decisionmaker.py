@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import unittest
 
 from .context import edgemanage
 
-from test_edgestate import EdgeStateTemplate
+from .test_edgestate import EdgeStateTemplate
 
 TEST_EDGE = "testedge1"
 GOOD_ENOUGH = 1.0
