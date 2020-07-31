@@ -11,7 +11,7 @@ import six
 
 try:
     env = Environment(loader=PackageLoader('edgemanage', 'templates'))
-except ImportError as e:
+except ImportError:
     # we're not installed as a module
     if os.path.exists("edgemanage/templates") and os.path.isdir("edgemanage/templates"):
         env = Environment(loader=FileSystemLoader("edgemanage/templates"))

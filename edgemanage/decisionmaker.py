@@ -47,13 +47,11 @@ class DecisionMaker(object):
 
         return sliced
 
-
     def check_threshold(self, good_enough):
-
-        ''' Check fetch response times for being under the given
+        """
+        Check fetch response times for being under the given
         threshold.
-
-        '''
+        """
 
         # dict for stats to return
         results_dict = {}

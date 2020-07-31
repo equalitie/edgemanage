@@ -156,6 +156,7 @@ def main(dnet, dry_run, config, state_obj,
             run_after_changes_section = config["commands"].get("run_after_changes", [])
             run_command_list(run_after_changes_section)
 
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Manage Deflect edge status.')
@@ -243,7 +244,7 @@ if __name__ == "__main__":
         for canary_site, canary_ip in six.iteritems(canary_data):
             try:
                 ipaddr_canary = ipaddr.IPAddress(canary_ip)
-            except ValueError as exc:
+            except ValueError:
                 logging.error(("Canary for %s is invalid: value %s is not an "
                                "IP address. Not using"),
                               canary_site, canary_ip)

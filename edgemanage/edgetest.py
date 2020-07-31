@@ -9,7 +9,8 @@ from edgemanage import const
 
 # external
 import requests
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
 from six.moves import range
 
 # Make requests stop logging so much. I love you but you need to shut
@@ -17,7 +18,7 @@ from six.moves import range
 requests_log = logging.getLogger("requests")
 requests_log.setLevel(logging.WARNING)
 # Disable warning when making non-verified HTTPS requests
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+urllib3.disable_warnings(InsecureRequestWarning)
 
 USER_AGENT = "Edgemanage v2 (https://github.com/equalitie/edgemanage)"
 
@@ -59,8 +60,8 @@ class EdgeTest(object):
         self.local_sum = local_sum
 
     def make_request(self, fetch_host, fetch_object, proto, port, verify):
-        request_url = six.moves.urllib.parse.urljoin(proto + "://" + self.edgename + ":" + str(port),
-                                       fetch_object)
+        request_url = six.moves.urllib.parse.urljoin(
+            proto + "://" + self.edgename + ":" + str(port), fetch_object)
         return requests.get(request_url, verify=verify, timeout=const.FETCH_TIMEOUT,
                             headers={"Host": fetch_host, "User-Agent": USER_AGENT})
         pass
@@ -72,7 +73,7 @@ class EdgeTest(object):
         """
         try:
             response = self.make_request(fetch_host, fetch_object, proto, port, verify)
-        except requests.exceptions.Timeout as e:
+        except requests.exceptions.Timeout:
             # Just assume it took the maximum amount of time
             return const.FETCH_TIMEOUT
         except requests.exceptions.ConnectionError as e:
@@ -84,7 +85,7 @@ class EdgeTest(object):
                     # Request was successful, stop retrying and
                     # continue
                     break
-                except requests.exceptions.ConnectionError as e:
+                except requests.exceptions.ConnectionError:
                     continue
             else:
                 logging.error("Failed to connect to %s after retrying %d times",
