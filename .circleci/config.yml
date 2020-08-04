@@ -13,4 +13,4 @@ jobs:
     - run: pip install tox
     - run: tox
     # Copy coverage output to the artifacts directory
-    #- run: cp -R htmlcov $CIRCLE_ARTIFACTS
+    - run: cp -R htmlcov $CIRCLE_ARTIFACTS
