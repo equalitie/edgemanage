@@ -1,7 +1,0 @@
-test:
-  override:
-    - tox
-
-  post:
-    # Copy coverage output to the artifacts directory
-    - cp -R htmlcov $CIRCLE_ARTIFACTS
