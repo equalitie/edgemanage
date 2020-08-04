@@ -9,6 +9,7 @@ jobs:
     - checkout
     - run: sudo apt-get install python-yaml python-requests python-jinja2 python-concurrent.futures python-setuptools python-setproctitle build-essential
     - run: pip install -r requirements.txt
-    - run: tox
+    - run: pip install -r test-requirements.txt
+    - run: pip install tox
     # Copy coverage output to the artifacts directory
     - run: cp -R htmlcov $CIRCLE_ARTIFACTS
