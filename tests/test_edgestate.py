@@ -49,5 +49,6 @@ class EdgeStateTest(EdgeStateTemplate):
 
         self.assertEqual(len(a), TEST_FETCH_HISTORY)
 
+
 if __name__ == '__main__':
     unittest.main()

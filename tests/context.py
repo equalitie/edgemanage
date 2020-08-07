@@ -5,10 +5,10 @@
 # Usage in a test module:
 # from .context import edgemanage
 
-from __future__ import absolute_import
+from __future__ import absolute_import  # noqa: E402
 import os
 import sys
 
 sys.path.insert(0, os.path.abspath('..'))
 
-import edgemanage  # flake8: noqa
+import edgemanage  # noqa: F401,E402

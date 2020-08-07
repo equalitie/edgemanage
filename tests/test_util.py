@@ -37,5 +37,6 @@ class UtilTest(unittest.TestCase):
             self.assertEqual(returncode, 0,
                              msg="Could lock already locked temporary file")
 
+
 if __name__ == '__main__':
     unittest.main()

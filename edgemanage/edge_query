@@ -112,6 +112,7 @@ def main(args):
         else:
             json_output(entry, args.verbose, args.quiet)
 
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Query Deflect edge status.')

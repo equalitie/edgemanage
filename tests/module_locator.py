@@ -13,7 +13,6 @@
 from __future__ import absolute_import
 import os
 import sys
-import six
 
 
 def we_are_frozen():
@@ -23,7 +22,6 @@ def we_are_frozen():
 
 def module_path():
     # Return the absolute filesystem path to this module
-    encoding = sys.getfilesystemencoding()
     if we_are_frozen():
         return os.path.dirname(sys.executable)
     return os.path.dirname(__file__)

@@ -70,6 +70,7 @@ def main(dnet, edgename, config, mode, comment=None, no_syslog=False):
 
     print("Set mode for %s to %s" % (edgename, mode))
 
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Configure Deflect edge mode.')

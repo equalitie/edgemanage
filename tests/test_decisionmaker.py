@@ -78,5 +78,6 @@ class DecisionMakerTest(EdgeStateTemplate):
     #    passing_edge_state = _get_passing_edge_state()
     #    failing_edge_state = _get_failing_edge_state()
 
+
 if __name__ == '__main__':
     unittest.main()

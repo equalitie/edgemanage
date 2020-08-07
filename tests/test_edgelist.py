@@ -84,5 +84,6 @@ class EdgeListTest(unittest.TestCase):
             known_zone = known_zone_f.read()
         self.assertEqual(known_zone, new_zone)
 
+
 if __name__ == '__main__':
     unittest.main()

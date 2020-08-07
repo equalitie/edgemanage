@@ -65,8 +65,8 @@ def main():
 
     # Output results without references
     sys.stdout = orig_stdout
-    print((yaml.dump({'edge_list': edge_dictonary}, default_flow_style=False,
-                    Dumper=ExplicitDumper)))
+    print((
+        yaml.dump({'edge_list': edge_dictonary}, default_flow_style=False, Dumper=ExplicitDumper)))
 
 
 if __name__ == '__main__':

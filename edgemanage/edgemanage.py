@@ -320,7 +320,7 @@ class EdgeManage(object):
                         self.edgelist_obj.add_edge(edgename, state="pass", live=True)
                         edgelist_changed = True
 
-            elif edgename not in list(self.canary_data.values()) and edge_state.mode == "blindforce":
+            elif edgename not in list(self.canary_data.values()) and edge_state.mode == "blindforce":  # noqa: E501
                 logging.debug("Making host %s live because it is in mode blindforce.",
                               edgename)
                 self.edgelist_obj.add_edge(edgename, state="pass", live=True)

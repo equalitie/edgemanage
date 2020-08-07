@@ -243,5 +243,6 @@ class EdgeManageIntegration(unittest.TestCase):
             logging.exception("No web_process found.")
         shutil.rmtree(self.edge_data_dir)
 
+
 if __name__ == '__main__':
     unittest.main()
