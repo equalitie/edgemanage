@@ -25,5 +25,5 @@ def module_path():
     # Return the absolute filesystem path to this module
     encoding = sys.getfilesystemencoding()
     if we_are_frozen():
-        return os.path.dirname(six.text_type(sys.executable, encoding))
-    return os.path.dirname(six.text_type(__file__, encoding))
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(__file__)

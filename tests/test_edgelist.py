@@ -6,7 +6,7 @@ from .context import edgemanage
 from . import module_locator
 
 TEST_DOMAIN = "fakesite.deflect.ca"
-my_path = module_locator.module_path() + "/test_data"
+my_path = "{}/test_data".format(module_locator.module_path())
 
 
 class EdgeListTest(unittest.TestCase):
