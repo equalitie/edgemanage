@@ -9,3 +9,4 @@ dist/
 edgemanage.egg-info/
 htmlcov/
 venv3
+docs

@@ -1,5 +1,5 @@
 '''
- Edgemanage constants. Not much to see here.
+  Edgemanage constants. Not much to see here.
 '''
 
 # Default configuration path

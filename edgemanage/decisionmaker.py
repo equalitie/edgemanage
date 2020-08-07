@@ -1,3 +1,7 @@
+"""
+Module for making judgement on whether a givin edge passed threshold
+"""
+
 from __future__ import absolute_import
 from . import const
 
@@ -16,6 +20,11 @@ class DecisionMaker(object):
         self.edges_disabled = False
 
     def add_edge_state(self, edge_state):
+        """
+        Called by external module
+        for adding new edge state
+        """
+
         self.edge_states[edge_state.edgename] = edge_state
         self.current_judgement[edge_state.edgename] = None
 
