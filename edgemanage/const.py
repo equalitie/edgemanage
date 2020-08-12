@@ -1,6 +1,6 @@
-'''
+"""
   Edgemanage constants. Not much to see here.
-'''
+"""
 
 # Default configuration path
 CONFIG_PATH = "/etc/edgemanage/edgemanage.yaml"

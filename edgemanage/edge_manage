@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+"""
+Main entry point of edgemanage
+
+edge_manage should be called periodically by crontab
+to actually trigger edge rotation and generates
+zone file for DNS server
+
+"""
+
 from __future__ import absolute_import
 from edgemanage import const, EdgeManage, StateFile, util
 

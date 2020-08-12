@@ -3,11 +3,12 @@
 """
 Tool for manipulating the state of edges.
 
-  edge_conf takes the required mode parameter and sets the mode of an
- edge to the corresponding mode. The behaviours of these modes can be
- seen in edgemanage/const.py.
+edge_conf takes the required mode parameter and sets the mode of an
+edge to the corresponding mode. The behaviours of these modes can be
+seen in edgemanage/const.py.
 
 """
+
 from __future__ import absolute_import
 from __future__ import print_function
 from edgemanage import EdgeState, util

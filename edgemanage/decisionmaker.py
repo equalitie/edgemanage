@@ -60,6 +60,15 @@ class DecisionMaker(object):
         """
         Check fetch response times for being under the given
         threshold.
+
+        Interate each edge, check them by this order:
+
+            - edge_state.last_value() < good_enough
+            - edge_state.last_value() == const.FETCH_TIMEOUT
+            - time_slice and time_slice_avg < good_enough
+            - edge_state.current_average() < good_enough
+            - else
+
         """
 
         # dict for stats to return

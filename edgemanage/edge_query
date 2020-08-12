@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-"""Tool for querying the state of edges.
+"""
+Tool for querying the state of edges.
 
-  edge_conf takes one of a number of parameters and filters, then
- displays the corresponding edges. The behaviours of these modes can
- be seen in edgemanage/const.py.
+edge_conf takes one of a number of parameters and filters, then
+displays the corresponding edges. The behaviours of these modes can
+be seen in edgemanage/const.py.
 
 """
+
 from __future__ import absolute_import
 from __future__ import print_function
 from edgemanage import EdgeState

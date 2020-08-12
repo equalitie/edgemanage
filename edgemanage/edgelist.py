@@ -1,3 +1,7 @@
+"""
+A class that represents a list of edges
+"""
+
 from __future__ import absolute_import
 import logging
 import time
