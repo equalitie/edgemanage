@@ -12,7 +12,10 @@ jobs:
       - run: pip install -r test-requirements.txt
       - run: pip install tox
       - run: tox
-      - run: cp -R htmlcov /tmp/htmlcov
+      - run: mkdir /tmp/artifacts && cp -R htmlcov /tmp/artifacts/htmlcov
+      - run: pip install pdoc3
+      - run: pdoc -o docs --html edgemanage
+      - run: cp -R docs /tmp/artifacts/docs
       - store_artifacts:
-          path: /tmp/htmlcov
+          path: /tmp/artifacts
           destination: artifact-file
