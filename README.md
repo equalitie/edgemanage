@@ -1,4 +1,4 @@
-edgemanage2
+edgemanage3
 ========
 
 Edgemanage is a tool for managing the HTTP availability of a cluster of
@@ -155,3 +155,6 @@ by David Mason. For various reasons, Edgemanage2 is written in Python.
 [^1]: Figures less than 60 seconds are actually outright forbidden as
 it somewhat negates the purpose of the tool. Dry run mode can be used
 to run more regularly with no file writing.
+
+Python 2 to 3 upgrading process start around July of 2020, as Python 2
+is no longer supported.
