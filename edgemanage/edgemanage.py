@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+"""
+Main entry point of edgemanage, imported by edge_manage binary
+
+"""
+
 from __future__ import absolute_import
 from edgemanage.edgetest import EdgeTest, VerifyFailed, FetchFailed
 from edgemanage import EdgeState, DecisionMaker, EdgeList, const
@@ -68,15 +73,15 @@ class EdgeManage(object):
 
     def __init__(self, dnet, config, state, canary_data={}, dry_run=False):
         '''
-         Upper-level edgemanage object that is used to create
+        Upper-level edgemanage object that is used to create
         lower-level edgemanage objects and accomplish the overall task
         of edge testing, rotation and zone file writing.
 
         Args:
-         dnet: string representing the dnet for which we're writing rules
-         config: configuration dictionary
-         state: state object
-         canary_data: per-site canary site->canary_ip dict
+            dnet: string representing the dnet for which we're writing rules
+            config: configuration dictionary
+            state: state object
+            canary_data: per-site canary site->canary_ip dict
 
         '''
 
@@ -281,7 +286,7 @@ class EdgeManage(object):
         Choose edges, write out zone files and state info.
 
         Args:
-         force_update: write out renewed zone files even if no changes needed
+            force_update: write out renewed zone files even if no changes needed
 
         '''
         # Returns true if any changes were made.

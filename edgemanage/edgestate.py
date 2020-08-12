@@ -1,3 +1,9 @@
+"""
+An object representing a simple set of time series data,
+backed by a local JSON file store.
+
+"""
+
 from __future__ import absolute_import
 import os
 import json
@@ -38,7 +44,7 @@ class EdgeState(object):
         '''An object representing a simple set of time series data,
         backed by a local JSON file store. Also some state variables.
 
-         Aka: Anything but RRD.
+        Aka: Anything but RRD.
         '''
 
         self.edgename = edgename
