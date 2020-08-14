@@ -12,6 +12,12 @@ import six
 
 class DecisionMaker(object):
 
+    """
+    This object defines the rule of a edge's health,
+    object is created in `edgemanage` and is able to
+    provide judgement after some `add_edge_state()` call
+    """
+
     def __init__(self):
         self.edge_states = {}
         # A results dict with edge as key, string as value, one of
@@ -29,12 +35,15 @@ class DecisionMaker(object):
         self.current_judgement[edge_state.edgename] = None
 
     def get_judgement(self, edgename):
+        """ Returns `current_judgement` of a edge """
         return self.current_judgement[edgename]
 
     def edge_is_passing(self, edgename):
+        """ Returns `True` if `get_judgement` is not 'fail' """
         return self.get_judgement(edgename) != "fail"
 
     def edge_average(self, edgename):
+        """ Returns `current_average()` of a edge """
         return self.edge_states[edgename].current_average()
 
     def edge_state_slice(self, edge_state):
@@ -63,11 +72,11 @@ class DecisionMaker(object):
 
         Interate each edge, check them by this order:
 
-            - edge_state.last_value() < good_enough
-            - edge_state.last_value() == const.FETCH_TIMEOUT
-            - time_slice and time_slice_avg < good_enough
-            - edge_state.current_average() < good_enough
-            - else
+        - edge_state.last_value() < good_enough
+        - edge_state.last_value() == const.FETCH_TIMEOUT
+        - time_slice and time_slice_avg < good_enough
+        - edge_state.current_average() < good_enough
+        - else
 
         """
 
