@@ -63,7 +63,11 @@ class EdgeManage(object):
         self.current_mtimes = self.zone_mtime_setup()
 
     def get_testobject_hash(self):
-        # Hash the local copy of the object to be requested from the edges
+        """
+        Called by `_init_objects` (private call)
+
+        Hash the local copy of the object to be requested from the edges
+        """
         with open(self.config["testobject"]["local"], 'rb') as test_local_f:
             testobject_hash = hashlib.md5(test_local_f.read()).hexdigest()
             logging.info("Hash of local object %s is %s",
@@ -95,7 +99,12 @@ class EdgeManage(object):
         self._init_objects()
 
     def zone_mtime_setup(self):
-        # Get a complete list of zone names
+        """
+        Called by `_init_objects` (private call)
+
+        Get a complete list of zone names
+        """
+
         current_mtimes = {}
         for zonefile in glob.glob("%s/%s/*.zone" % (self.config["zonetemplate_dir"], self.dnet)):
             zone_name = zonefile.rsplit(".zone", 1)[0].split("/")[-1]
@@ -105,6 +114,12 @@ class EdgeManage(object):
         return current_mtimes
 
     def add_edge_state(self, edge, edge_healthdata_path, nowrite=False):
+        """
+        Called by binary `edge_manage`
+
+        Reads edges hostname from edgelist_dir (`/etc/edgemanage/edges/`)
+        and combines with healthdata_store (`/var/lib/edgemanage/health/`)
+        """
         try:
             edge_state = EdgeState(edge, edge_healthdata_path, nowrite=nowrite)
         except ValueError as exc:
@@ -119,8 +134,8 @@ class EdgeManage(object):
         Cancel canary tests and disable all canaries if too many are failing.
 
         All canary tests which have not run already are canceled and their
-        result time will be set to the FETCH_TIMEOUT value. All finished
-        canary tests will be failed in DecisionMaker when `edges_disabled` is True.
+        result time will be set to the `FETCH_TIMEOUT` value. All finished
+        canary tests will be failed in `DecisionMaker` when `edges_disabled` is True.
         """
         canary_stats = self.canary_decision.check_threshold(self.config["goodenough"])
 
@@ -139,6 +154,12 @@ class EdgeManage(object):
                 self.canary_decision.add_edge_state(self.edge_states[untested_edge])
 
     def do_edge_tests(self):
+        """
+        Called by binary `edge_manage`
+
+        Use ThreadPoolExecutor to create worker (count in config `workers`, default 10)
+        to perform edge testing via `EdgeTest` object
+        """
         test_dict = self.config["testobject"]
         test_host = test_dict["host"]
         test_path = test_dict["uri"]
@@ -281,7 +302,6 @@ class EdgeManage(object):
         return choosen_edges
 
     def make_edges_live(self, force_update):
-
         '''
         Choose edges, write out zone files and state info.
 
