@@ -97,14 +97,17 @@ class EdgeState(object):
         os.chmod(self.statfile, 0o644)
 
     def set_comment(self, comment):
+        ''' Set comments for edge (display in edge list) '''
         self.comment = comment
         self._dump()
 
     def unset_comment(self):
+        ''' Unset comments for edge (display in edge list) '''
         self.comment = ""
         self._dump()
 
     def set_health(self, health):
+        ''' Set health to edge '''
         if health not in VALID_HEALTHS:
             raise ValueError("Health must be one f %s, not %s",
                              str(VALID_HEALTHS), health)
@@ -161,6 +164,7 @@ class EdgeState(object):
         return self.fetch_times[max(self.fetch_times.keys())]
 
     def add_rotation(self):
+        ''' Add rotation history (presist in health JSON storage) '''
         self.rotation_history.append(time.time())
         self._dump()
 

@@ -42,6 +42,7 @@ class StateFile(object):
         return json.dumps(self.__dict__)
 
     def last_rotation(self):
+        ''' Get last rotation timestamp '''
         if self.rotation_list:
             return self.rotation_list[-1]
         else:

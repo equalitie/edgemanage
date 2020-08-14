@@ -64,6 +64,9 @@ class EdgeTest(object):
         self.local_sum = local_sum
 
     def make_request(self, fetch_host, fetch_object, proto, port, verify):
+        """
+         make HTTP request via `requests`
+        """
         request_url = six.moves.urllib.parse.urljoin(
             proto + "://" + self.edgename + ":" + str(port), fetch_object)
         return requests.get(request_url, verify=verify, timeout=const.FETCH_TIMEOUT,
