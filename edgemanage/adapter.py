@@ -22,6 +22,5 @@ class EdgemanageAdapter(object):
             self.edge_list = [i.strip() for i in edge_f.read().split("\n")
                               if i.strip() and not i.startswith("#")]
 
-
     def get_config(self, config_str):
         return self.config[config_str] if config_str in self.config else None
