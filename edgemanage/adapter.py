@@ -29,13 +29,14 @@ class EdgemanageAdapter(object):
     def get_config(self, config_str):
         return self.config[config_str] if config_str in self.config else None
 
-
     def edge_data_exist(self, edgename):
         return os.path.exists(os.path.join(self.config["healthdata_store"],
                                            "%s.edgestore" % edgename))
 
-
     def log_edge_conf(self, edgename, mode, comment):
+        """
+        edge_conf logger wrap
+        """
         handler = logging.handlers.SysLogHandler(
             facility=logging.handlers.SysLogHandler.LOG_DAEMON)
         logger = logging.getLogger('edge_conf')
@@ -43,7 +44,6 @@ class EdgemanageAdapter(object):
         logger.addHandler(handler)
         logger.info("Edge %s changed mode to %s with comment %s",
                     edgename, mode, comment)
-
 
     def lock_edge_conf(self):
         """
@@ -55,7 +55,6 @@ class EdgemanageAdapter(object):
             return False, "Couldn't acquire edge_conf lockfile"
 
         return True
-
 
     def unlock_edge_conf(self):
         """
