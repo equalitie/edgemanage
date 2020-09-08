@@ -1,13 +1,12 @@
 """
 Non-commandline adapter, work with Django
 """
-
-from edgemanage import util
-
 import logging
 import logging.handlers
-import yaml
 import os
+import yaml
+
+from edgemanage import util
 
 
 class EdgemanageAdapter(object):
@@ -22,9 +21,13 @@ class EdgemanageAdapter(object):
             self.config = yaml.safe_load(config_f.read())
 
         # load edge list
-        with open(os.path.join(self.config["edgelist_dir"], dnet)) as edge_f:
-            self.edge_list = [i.strip() for i in edge_f.read().split("\n")
-                              if i.strip() and not i.startswith("#")]
+        if dnet is not None:
+            with open(os.path.join(self.config["edgelist_dir"], dnet)) as edge_f:
+                self.edge_list = [i.strip() for i in edge_f.read().split("\n")
+                                  if i.strip() and not i.startswith("#")]
+
+        # init var
+        self.lock_f = None
 
     def get_config(self, config_str):
         return self.config[config_str] if config_str in self.config else None
@@ -61,3 +64,15 @@ class EdgemanageAdapter(object):
         Close the lock file
         """
         self.lock_f.close()
+
+    def dnet_query(self):
+        """
+        ls edgelist_dir
+        """
+        dnets = []
+        listdir = os.listdir(self.config["edgelist_dir"])
+        for dnet in listdir:
+            if not dnet.startswith('.'):
+                dnets.append(dnet)
+
+        return dnets
