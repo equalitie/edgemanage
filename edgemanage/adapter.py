@@ -76,3 +76,41 @@ class EdgemanageAdapter(object):
                 dnets.append(dnet)
 
         return dnets
+
+    def dump_dnet_and_edges(self, dnets):
+        """ Dump data into file
+
+            data: {
+                'dnet1': [
+                    'host1',
+                    'host2
+                ],
+                'dnet2': [
+                    'host3'
+                ]
+            }
+        """
+        ret = {
+            'existing_dnets': self.dnet_query(),
+            'created': [],
+            'deleted': []
+        }
+
+        for opcode, item in self.set_reconcile(ret['existing_dnets'], dnets):
+            if opcode == 'create':
+                ret['created'].append(item)
+            elif opcode == 'delete':
+                ret['deleted'].append(item)
+
+        return ret
+
+    def set_reconcile(self, src_seq, dst_seq):
+        """ Return required operations to mutate src_seq into dst_seq """
+        src_set= set(src_seq)
+        dst_set= set(dst_seq)
+
+        for item in src_set - dst_set:
+            yield 'delete', item
+
+        for item in dst_set - src_set:
+            yield 'create', item
