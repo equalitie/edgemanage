@@ -166,8 +166,8 @@ class EdgemanageAdapter(object):
 
     def set_reconcile(self, src_seq, dst_seq):
         """ Return required operations to mutate src_seq into dst_seq """
-        src_set= set(src_seq)
-        dst_set= set(dst_seq)
+        src_set = set(src_seq)
+        dst_set = set(dst_seq)
 
         for item in src_set - dst_set:
             yield 'delete', item
