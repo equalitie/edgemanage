@@ -45,6 +45,9 @@ healthdata_store: <abs_path>/dev/edgemanage/health
 # passed to the edgemanage command.
 edgelist_dir: <abs_path>/dev/edgemanage/edges
 
+# Exra edge list dir for deflect-next rollout
+extra_edgelist_dir: /Users/jeremy/eQ/edgemanage/dev/extra_edges
+
 # This setting defines the maximum number of substitutions that can be
 # performed in a 10 minute period
 dnschange_maxfreq: 10

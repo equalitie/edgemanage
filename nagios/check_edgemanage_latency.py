@@ -90,6 +90,7 @@ if __name__ == "__main__":
     if not os.path.isdir(config["healthdata_store"]):
         raise Exception("Argument must be a directory full of edge health files")
 
+    # TODO: extra edge list?
     with open(os.path.join(config["edgelist_dir"], args.dnet)) as edge_f:
         edge_list = [ i.strip() for i in edge_f.read().split("\n") if i.strip() and not i.startswith("#") ]
 

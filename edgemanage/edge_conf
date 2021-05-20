@@ -25,6 +25,7 @@ __author__ = "nosmo@nosmo.me"
 
 def main(dnet, edgename, config, mode, comment=None, no_syslog=False):
 
+    # TODO: extra edge list
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [i.strip() for i in edge_f.read().split("\n")
                      if i.strip() and not i.startswith("#")]

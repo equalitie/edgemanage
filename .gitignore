@@ -20,3 +20,5 @@ dev/state/*.state
 dev/tmp/*.live
 dev/edges/*
 !dev/edges/.gitkeep
+dev/extra_edges/*
+!dev/extra_edges/.gitkeep

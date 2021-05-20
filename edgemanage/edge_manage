@@ -107,6 +107,7 @@ def main(dnet, dry_run, config, state_obj,
 
     edgemanage_object = EdgeManage(dnet, config, state, canary_data, dry_run)
 
+    # TODO: extra edge list
     # Read the edgelist as a flat file
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [i.strip() for i in edge_f.read().split("\n")
