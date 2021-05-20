@@ -1,0 +1,116 @@
+# This config file is intended to for dev use only
+# All related config/log are configure in the current directly
+# for easy access and modification
+
+---
+testobject:
+  # The domain to query for the object - used to set the Host header
+  # in the GETs
+  host: prod.deflect.ca
+  # Port
+  port: 443
+  # Query over HTTP or HTTPS?
+  proto: https
+  # Path to the object to be retrieved
+  uri: /deflectlogo_RED.png
+  # Local copy of the object that we'll be fetching.
+  local: <abs_path>/dev/edgemanage/object.edgemanage
+  # Verify SSL certificates? Will cause spammy logging on some
+  # platforms.
+  verify: False
+
+dns:
+  # A list of nameservers to write NS records for in generated zone
+  # files
+  ns_records:
+    - dns2.example.com.
+    - dns1.example.com.
+  # The nameserver to write to SOA records
+  soa_nameserver: dns0.example.com.
+  # The mailbox to write to SOA records
+  soa_mailbox: zone.example.com.
+  # A list of labels to generate A records for with the balanced edge
+  # lists. This list automatically includes @ by default.
+
+# If run as a daemon, how often should tests be run?
+run_frequency: 60
+
+# Where health data for individual edges is stored
+healthdata_store: <abs_path>/dev/edgemanage/health
+
+# Directory containing lists of edges (hosts to be queried), divided
+# by network (the name passed to the -A flag). If you have two
+# networks, net_a and net_b, there would be two files named for each
+# network. These networks will be queried depending on which flag is
+# passed to the edgemanage command.
+edgelist_dir: <abs_path>/dev/edgemanage/edges
+
+# This setting defines the maximum number of substitutions that can be
+# performed in a 10 minute period
+dnschange_maxfreq: 10
+
+# Number of connections to make in parallel to the edges and canaries
+workers: 10
+
+# Number of retries when fetching the object from an edge
+retry: 3
+
+# A value, in seconds, that is used to determine edge health - one of
+# the core elements of edgemanage. If the fetch time, the fetch time
+# slice average, or the overall average is under this value, there is
+# a chance that an edge will be used. See the README for more
+# explanation of how this value is used.
+goodenough: 0.700
+
+# All checks against the canary edges are disabled when this number of
+# edge tests have failed. All canaries for a dnet are typically run on
+# the same server. If many are down, then the whole server is probably
+# unavailable.
+canary_killer: 6
+
+# A file used to maintain state, details about last rotation and the
+# previously in-use edges. This path can and should contain {dnet}
+statefile: <abs_path>/dev/edgemanage/state/{dnet}.state
+
+# The file that edgemanage should log to
+logpath: <abs_path>/dev/edgemanage/log/edgemanage.log
+# A simple lockfile to prevent concurrent execution
+lockfile: <abs_path>/dev/edgemanage/lock/edgemanage.lock
+
+# A directory containing directories containing files named
+# deflect.ca.zone, nosmo.me.zone and so on. Used for insertion into
+# completed zone files after edges have been decided upon. Stick your
+# MX, CNAME and non-@ A records into these files.
+zonetemplate_dir: <abs_path>/dev/edgemanage/zones
+
+# Number of edges to keep as the @ record in DNS - if not specific in
+# dnet_edge_count, this value will be used.
+edge_count: 1
+
+# Number of edges to keep as @ per-dnet
+dnet_edge_count:
+  my_dnet: 1
+
+# Directory to write completed, full DNS zone files to. If you're
+# using Edgemanage in a live capacity, this should be the directory
+# that your bind instance reads zone files from
+named_dir: <abs_path>/dev/edgemanage/bind/
+
+# File to output list of live edges to - the path may (and should!)
+# contain {dnet}
+live_list: <abs_path>/dev/edgemanage/tmp/edges.{dnet}.live
+
+# Canary interfaces - see the README for an explanation of how canary
+# interfaces work. The path can contain per-dnet files, mapping domain
+# names to IP addresses.
+#canary_files: /etc/edgemanage/canaries/{dnet}
+
+# Run commands before or after execution, or after a rotation/new zone
+# file being written out. A good example of a run_after_changes is
+# reloading your named, but in theory this could be anything!
+# Edgemanage doesn't wait for the process to return, so whatever this
+# screws up is all on you.
+commands:
+  run_after_changes:
+  run_after:
+  run_before:

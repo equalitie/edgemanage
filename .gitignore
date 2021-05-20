@@ -9,3 +9,14 @@ dist/
 edgemanage.egg-info/
 htmlcov/
 venv3
+venv
+
+dev/edgemanage.yaml
+dev/bind/*.zone
+dev/health/*.edgestore
+dev/lock/*.lock
+dev/log/*.log
+dev/state/*.state
+dev/tmp/*.live
+dev/edges/*
+!dev/edges/.gitkeep
