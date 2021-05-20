@@ -48,11 +48,19 @@ class EdgeManageIntegration(unittest.TestCase):
         config['edgelist_dir'] = os.path.join(self.edge_data_dir, 'edges')
         os.mkdir(config['edgelist_dir'])
 
+        config['extra_edgelist_dir'] = os.path.join(self.edge_data_dir, 'extra_edges')
+        os.mkdir(config['extra_edgelist_dir'])
+
         # Create flat file with list of edge IPs file
         for net in [DNET_NAME]:
             with open(os.path.join(config['edgelist_dir'], net), 'w') as edge_file:
                 for edge in range(0, num_edges):
                     edge_file.write('127.0.0.%d\n' % (edge+1))
+
+        for net in [DNET_NAME]:
+            with open(os.path.join(config['extra_edgelist_dir'], net), 'w') as edge_file:
+                for edge in range(0, num_edges):
+                    edge_file.write('127.0.0.%d\n' % (edge+num_edges+1))
 
         config['canary_files'] = '%s/canaries/{dnet}' % self.edge_data_dir
         os.mkdir(os.path.join(self.edge_data_dir, 'canaries'))
