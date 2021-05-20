@@ -30,6 +30,12 @@ def main(dnet, edgename, config, mode, comment=None, no_syslog=False):
         edge_list = [i.strip() for i in edge_f.read().split("\n")
                      if i.strip() and not i.startswith("#")]
 
+    with open(os.path.join(config["extra_edgelist_dir"], dnet)) as edge_f:
+        extra_edge_list = [i.strip() for i in edge_f.read().split("\n")
+                           if i.strip() and not i.startswith("#")]
+
+    edge_list += extra_edge_list
+
     if edgename not in edge_list:
         raise KeyError("Edge %s is not in the edge list of %s" %
                        (edgename, dnet))
