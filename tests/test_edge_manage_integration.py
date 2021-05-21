@@ -163,7 +163,7 @@ class EdgeManageIntegration(unittest.TestCase):
         self.assertTrue(len(state_data['last_live']), 4)
 
         health_data = self.load_all_health_files()
-        self.assertEqual(len(health_data), 40)
+        self.assertEqual(len(health_data), 60)  # 20 orignal edge + 20 extra + 20 canary
         self.assertTrue(all([edge['health'] == "pass_threshold"
                              for edge in health_data.values()]))
         self.assertLess(self.running_time, 1)
@@ -236,7 +236,7 @@ class EdgeManageIntegration(unittest.TestCase):
         health_data = self.load_all_health_files()
         health_count = collections.Counter([edge['health'] for edge in health_data.values()])
 
-        self.assertEqual(len(health_data), 20)
+        self.assertEqual(len(health_data), 30)  # 10 ori + 10 extra + 10 canary
         self.assertTrue(health_count["pass_threshold"], 4)
         self.assertTrue(health_count["pass"], 8)
         self.assertTrue(health_count["fail"], 8)
