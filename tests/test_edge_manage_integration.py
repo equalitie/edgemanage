@@ -166,7 +166,7 @@ class EdgeManageIntegration(unittest.TestCase):
         self.assertEqual(len(health_data), 60)  # 20 orignal edge + 20 extra + 20 canary
         self.assertTrue(all([edge['health'] == "pass_threshold"
                              for edge in health_data.values()]))
-        self.assertLess(self.running_time, 1)
+        self.assertLess(self.running_time, 1.5)  # more edge to test
 
     def test20Edges20CanariesAll3Seconds(self):
         """
@@ -209,7 +209,7 @@ class EdgeManageIntegration(unittest.TestCase):
         failed_edges = [edge for edge in health_data.values() if edge['health'] == "fail"]
         self.assertTrue(len(health_data), 20)
         self.assertTrue(len(failed_edges), 15)
-        self.assertLess(self.running_time, 5)
+        self.assertLess(self.running_time, 5.5)  # more edge to test
 
     def test10Edges10CanariesStaggered(self):
         """
