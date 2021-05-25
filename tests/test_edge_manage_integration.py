@@ -48,11 +48,19 @@ class EdgeManageIntegration(unittest.TestCase):
         config['edgelist_dir'] = os.path.join(self.edge_data_dir, 'edges')
         os.mkdir(config['edgelist_dir'])
 
+        config['extra_edgelist_dir'] = os.path.join(self.edge_data_dir, 'extra_edges')
+        os.mkdir(config['extra_edgelist_dir'])
+
         # Create flat file with list of edge IPs file
         for net in [DNET_NAME]:
             with open(os.path.join(config['edgelist_dir'], net), 'w') as edge_file:
                 for edge in range(0, num_edges):
                     edge_file.write('127.0.0.%d\n' % (edge+1))
+
+        for net in [DNET_NAME]:
+            with open(os.path.join(config['extra_edgelist_dir'], net), 'w') as edge_file:
+                for edge in range(0, num_edges):
+                    edge_file.write('127.0.0.%d\n' % (edge+num_edges+1))
 
         config['canary_files'] = '%s/canaries/{dnet}' % self.edge_data_dir
         os.mkdir(os.path.join(self.edge_data_dir, 'canaries'))
@@ -155,10 +163,10 @@ class EdgeManageIntegration(unittest.TestCase):
         self.assertTrue(len(state_data['last_live']), 4)
 
         health_data = self.load_all_health_files()
-        self.assertEqual(len(health_data), 40)
+        self.assertEqual(len(health_data), 60)  # 20 orignal edge + 20 extra + 20 canary
         self.assertTrue(all([edge['health'] == "pass_threshold"
                              for edge in health_data.values()]))
-        self.assertLess(self.running_time, 1)
+        self.assertLess(self.running_time, 1.5)  # more edge to test
 
     def test20Edges20CanariesAll3Seconds(self):
         """
@@ -201,7 +209,7 @@ class EdgeManageIntegration(unittest.TestCase):
         failed_edges = [edge for edge in health_data.values() if edge['health'] == "fail"]
         self.assertTrue(len(health_data), 20)
         self.assertTrue(len(failed_edges), 15)
-        self.assertLess(self.running_time, 5)
+        self.assertLess(self.running_time, 5.5)  # more edge to test
 
     def test10Edges10CanariesStaggered(self):
         """
@@ -228,7 +236,7 @@ class EdgeManageIntegration(unittest.TestCase):
         health_data = self.load_all_health_files()
         health_count = collections.Counter([edge['health'] for edge in health_data.values()])
 
-        self.assertEqual(len(health_data), 20)
+        self.assertEqual(len(health_data), 30)  # 10 ori + 10 extra + 10 canary
         self.assertTrue(health_count["pass_threshold"], 4)
         self.assertTrue(health_count["pass"], 8)
         self.assertTrue(health_count["fail"], 8)

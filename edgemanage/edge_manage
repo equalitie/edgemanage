@@ -107,11 +107,20 @@ def main(dnet, dry_run, config, state_obj,
 
     edgemanage_object = EdgeManage(dnet, config, state, canary_data, dry_run)
 
+    # TODO: extra edge list
     # Read the edgelist as a flat file
     with open(os.path.join(config["edgelist_dir"], dnet)) as edge_f:
         edge_list = [i.strip() for i in edge_f.read().split("\n")
                      if i.strip() and not i.startswith("#")]
         logging.info("Edge list is %s", str(edge_list))
+
+    with open(os.path.join(config["extra_edgelist_dir"], dnet)) as edge_f:
+        extra_edge_list = [i.strip() for i in edge_f.read().split("\n")
+                     if i.strip() and not i.startswith("#")]
+        logging.info("Extra Edge list is %s", str(extra_edge_list))
+
+    edge_list += extra_edge_list
+    logging.info("MERGED Edge list is %s", str(edge_list))
 
     # Load or create our edge state files
     for edge in edge_list:
