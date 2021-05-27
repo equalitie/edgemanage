@@ -13,12 +13,13 @@ setup(
     package_data={'edgemanage': ['templates/*.j2']},
     zip_safe=False,
     install_requires=[
-        "Jinja2",
-        "setproctitle",
+        "Jinja2==2.11.2",
+        "setproctitle==1.1.10",
         "pyyaml",
-        "futures",
+        "futures==3.0.5",
         "requests",
-        "ipaddr"
+        "ipaddr==2.1.11",
+        "MarkupSafe==1.1.1"
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
