@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name = "edgemanage",
-    version = "2.1.2",
+    version = "2.2.0",
     author = "Donncha O Cearbhaill",
     author_email = "donncha@equalit.ie",
     description = "HTTP availability management tool",
