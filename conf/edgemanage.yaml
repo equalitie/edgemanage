@@ -44,7 +44,7 @@ healthdata_store: /var/lib/edgemanage/health/
 edgelist_dir: /etc/edgemanage/edges/
 
 # Exra edge list dir for deflect-next rollout
-extra_edgelist_dir: /Users/jeremy/eQ/edgemanage/dev/extra_edges
+extra_edgelist_dir: /etc/edgemanage/dev/extra_edges
 
 # This setting defines the maximum number of substitutions that can be
 # performed in a 10 minute period

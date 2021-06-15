@@ -14,7 +14,7 @@ testobject:
   # Path to the object to be retrieved
   uri: /deflectlogo_RED.png
   # Local copy of the object that we'll be fetching.
-  local: <abs_path>/dev/edgemanage/object.edgemanage
+  local: <abs_path>/dev/object.edgemanage
   # Verify SSL certificates? Will cause spammy logging on some
   # platforms.
   verify: False
@@ -36,17 +36,17 @@ dns:
 run_frequency: 60
 
 # Where health data for individual edges is stored
-healthdata_store: <abs_path>/dev/edgemanage/health
+healthdata_store: <abs_path>/dev/health
 
 # Directory containing lists of edges (hosts to be queried), divided
 # by network (the name passed to the -A flag). If you have two
 # networks, net_a and net_b, there would be two files named for each
 # network. These networks will be queried depending on which flag is
 # passed to the edgemanage command.
-edgelist_dir: <abs_path>/dev/edgemanage/edges
+edgelist_dir: <abs_path>/dev/edges
 
 # Exra edge list dir for deflect-next rollout
-extra_edgelist_dir: /Users/jeremy/eQ/edgemanage/dev/extra_edges
+extra_edgelist_dir: <abs_path>/dev/extra_edges
 
 # This setting defines the maximum number of substitutions that can be
 # performed in a 10 minute period
@@ -73,18 +73,18 @@ canary_killer: 6
 
 # A file used to maintain state, details about last rotation and the
 # previously in-use edges. This path can and should contain {dnet}
-statefile: <abs_path>/dev/edgemanage/state/{dnet}.state
+statefile: <abs_path>/dev/state/{dnet}.state
 
 # The file that edgemanage should log to
-logpath: <abs_path>/dev/edgemanage/log/edgemanage.log
+logpath: <abs_path>/dev/log/edgemanage.log
 # A simple lockfile to prevent concurrent execution
-lockfile: <abs_path>/dev/edgemanage/lock/edgemanage.lock
+lockfile: <abs_path>/dev/lock/edgemanage.lock
 
 # A directory containing directories containing files named
 # deflect.ca.zone, nosmo.me.zone and so on. Used for insertion into
 # completed zone files after edges have been decided upon. Stick your
 # MX, CNAME and non-@ A records into these files.
-zonetemplate_dir: <abs_path>/dev/edgemanage/zones
+zonetemplate_dir: <abs_path>/dev/zones
 
 # Number of edges to keep as the @ record in DNS - if not specific in
 # dnet_edge_count, this value will be used.
@@ -97,11 +97,11 @@ dnet_edge_count:
 # Directory to write completed, full DNS zone files to. If you're
 # using Edgemanage in a live capacity, this should be the directory
 # that your bind instance reads zone files from
-named_dir: <abs_path>/dev/edgemanage/bind/
+named_dir: <abs_path>/dev/bind/
 
 # File to output list of live edges to - the path may (and should!)
 # contain {dnet}
-live_list: <abs_path>/dev/edgemanage/tmp/edges.{dnet}.live
+live_list: <abs_path>/dev/tmp/edges.{dnet}.live
 
 # Canary interfaces - see the README for an explanation of how canary
 # interfaces work. The path can contain per-dnet files, mapping domain
