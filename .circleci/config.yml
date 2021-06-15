@@ -7,7 +7,7 @@ jobs:
       - image: circleci/python:2.7
     steps:
       - checkout
-      - run: sudo apt-get install python-yaml python-requests python-jinja2 python-concurrent.futures python-setuptools python-setproctitle build-essential
+      - run: sudo apt-get update && sudo apt-get install python-yaml python-requests python-jinja2 python-concurrent.futures python-setuptools python-setproctitle build-essential
       - run: pip install -r requirements.txt
       - run: pip install -r test-requirements.txt
       - run: pip install tox
