@@ -8,12 +8,12 @@ jobs:
     steps:
       - checkout
       - run:
-        name: Install deps
-        command: |
-        sudo apt-get update
-        sudo apt-get install python-yaml python-requests python-jinja2 \
-                             python-concurrent.futures python-setuptools \
-                             python-setproctitle build-essential
+          name: Install deps
+          command: |
+            sudo apt-get update
+            sudo apt-get install python-yaml python-requests python-jinja2 \
+                                 python-concurrent.futures python-setuptools \
+                                 python-setproctitle build-essential
       - run: pip install -r requirements.txt
       - run: pip install -r test-requirements.txt
       - run: pip install tox
