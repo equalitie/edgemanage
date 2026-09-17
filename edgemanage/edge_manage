@@ -223,13 +223,20 @@ if __name__ == "__main__":
                       state.last_run, time_now)
         sys.exit(1)
 
+    # Tag every line with the dnet this run operates on. The filter lives
+    # on the handler so that records propagated from library loggers get
+    # the attribute too - a missing %(dnet)s blows up the formatter.
+    dnet_filter = util.DnetLogFilter(args.dnet)
+
     if args.verbose:
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler()  # log to STDERR
         handler.setFormatter(
-            logging.Formatter('edgemanage (%(process)d): %(levelname)s %(message)s')
+            logging.Formatter('edgemanage (%(process)d): [%(dnet)s] '
+                              '%(levelname)s %(message)s')
         )
+        handler.addFilter(dnet_filter)
         logger.addHandler(handler)
 
     else:
@@ -238,7 +245,8 @@ if __name__ == "__main__":
         logger.setLevel(logging.INFO)
         logfile_handler = logging.handlers.WatchedFileHandler(config["logpath"])
         logfile_handler.setFormatter(logging.Formatter('%(asctime)s (%(process)d): '
-                                                       '%(levelname)s %(message)s'))
+                                                       '[%(dnet)s] %(levelname)s %(message)s'))
+        logfile_handler.addFilter(dnet_filter)
         # TODO setup logging for error level in another file
         logger.addHandler(logfile_handler)
 

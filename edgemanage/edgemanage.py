@@ -490,7 +490,7 @@ class EdgeManage(object):
                 old_mtime = self.state_obj.zone_mtimes.get(zone_name)
                 if (not force_update and not edgelist_changed and not canary_changed and
                         old_mtime and old_mtime == self.current_mtimes[zone_name]):
-                    logging.info("Not writing zonefile for %s because there are no changes pending",
+                    logging.debug("Not writing zonefile for %s because there are no changes pending",
                                  zone_name)
                     continue
                 else:

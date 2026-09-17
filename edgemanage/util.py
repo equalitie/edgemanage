@@ -4,9 +4,27 @@ Global utility functions
 
 from __future__ import absolute_import
 import os
+import logging
 import tempfile as tmp
 import fcntl
 from contextlib import contextmanager
+
+
+class DnetLogFilter(logging.Filter):
+    """Stamp every log record with the dnet the current run operates on.
+
+    Attached to handlers rather than to a logger so that records
+    propagated from library loggers (requests, urllib3) are tagged too -
+    a logger's filters don't apply to records it only propagates.
+    """
+
+    def __init__(self, dnet):
+        logging.Filter.__init__(self)
+        self.dnet = dnet if dnet else "-"
+
+    def filter(self, record):
+        record.dnet = self.dnet
+        return True
 
 
 def acquire_lock(lockfile):
