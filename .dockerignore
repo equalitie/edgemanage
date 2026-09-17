@@ -1,0 +1,15 @@
+.git
+.github
+.circleci
+.tox
+venv
+venv3
+build
+dist
+htmlcov
+.coverage
+*.egg-info
+**/__pycache__
+*.py[co]
+.DS_Store
+**/.DS_Store

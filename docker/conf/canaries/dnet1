@@ -1,0 +1,8 @@
+# Canary edges for dnet1: zone name -> canary IP.
+#
+# These must be literal IP addresses (edge_manage validates them with
+# ipaddr.IPAddress), which is why the compose network pins static addresses.
+# A healthy canary displaces one random live edge in that zone's file only, and
+# is never counted towards edge_count.
+test.local: 172.28.0.101
+example.local: 172.28.0.102

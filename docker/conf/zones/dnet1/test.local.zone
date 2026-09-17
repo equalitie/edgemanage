@@ -1,0 +1,6 @@
+; Operator-supplied include file for test.local. Standard bind records, no SOA -
+; edgemanage wraps this with the SOA, NS and rotating A records from
+; edgemanage/templates/zonetemplate.j2.
+mail            300     IN      CNAME   test.local.
+ns1             300     IN      A       172.28.0.6
+_harness        300     IN      TXT     "spliced in from zonetemplate_dir"

@@ -1,0 +1,3 @@
+; Deliberately empty apart from this comment - an include file with no extra
+; records is valid, per INSTALL.md. example.local exists to show a zone whose
+; canary is unhealthy and therefore never substituted in.

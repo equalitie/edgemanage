@@ -1,0 +1,118 @@
+---
+# Edgemanage config for the local Docker harness. This is conf/edgemanage.yaml
+# with the paths and hosts pointed at the compose stack - see docker/README.md.
+#
+# Note that `testing` is deliberately NOT set here. Each edge is its own
+# container, so the real Host header (testobject.host) works and we exercise the
+# same request shape as production, which the integration suite cannot.
+
+testobject:
+  # The domain to query for the object - used to set the Host header
+  # in the GETs
+  host: test.local
+  # Port
+  port: 80
+  # Query over HTTP or HTTPS?
+  proto: http
+  # Path to the object to be retrieved
+  uri: /myobject.edgemanage
+  # Local copy of the object that we'll be fetching. The origin containers get
+  # a byte-identical copy baked in, so the md5 check passes.
+  local: /etc/edgemanage/myobject.edgemanage
+  # Verify SSL certificates? Irrelevant here as we speak plain HTTP.
+  verify: False
+
+dns:
+  # A list of nameservers to write NS records for in generated zone
+  # files
+  ns_records:
+    - ns1.test.local.
+  # The nameserver to write to SOA records
+  soa_nameserver: ns1.test.local.
+  # The mailbox to write to SOA records
+  soa_mailbox: hostmaster.test.local.
+  # A list of labels to generate A records for with the balanced edge
+  # lists. This list automatically includes @ by default.
+  rotate_zones:
+    - www
+
+# If run as a daemon, how often should tests be run? The harness uses
+# edgemanage_loop.sh rather than --daemonise, so this is unused.
+run_frequency: 60
+
+# Where health data for individual edges is stored
+healthdata_store: /var/lib/edgemanage/health/
+
+# Directory containing lists of edges (hosts to be queried), divided
+# by network (the name passed to the -A flag).
+edgelist_dir: /etc/edgemanage/edges/
+
+# This setting defines the maximum number of substitutions that can be
+# performed in a 10 minute period
+dnschange_maxfreq: 10
+
+# Number of connections to make in parallel to the edges and canaries.
+#
+# Kept at 1 on purpose. EdgeTest uses the OverrideDNS context manager, which
+# swaps the module-global socket.getaddrinfo with no locking, so with more than
+# one worker AND edges on distinct IPs (which is the case here, unlike the
+# integration suite where every edge is 127.0.0.x) one thread's override can be
+# in force while another thread resolves - a fetch can end up timed against the
+# wrong edge. Raise this to reproduce that; leave it at 1 for legible results.
+workers: 1
+
+# Number of retries when fetching the object from an edge
+retry: 3
+
+# A value, in seconds, that is used to determine edge health. edge5 is
+# configured to respond in ~3s so that it lands below this threshold.
+goodenough: 0.700
+
+# All checks against the canary edges are disabled when this number of
+# edge tests have failed.
+canary_killer: 6
+
+# A file used to maintain state, details about last rotation and the
+# previously in-use edges.
+statefile: /var/lib/edgemanage/{dnet}.state
+
+# The file that edgemanage should log to. The harness runs with -v, which logs
+# to stderr instead, but the path still has to be writable.
+logpath: /var/log/edgemanage/edgemanage.log
+# A simple lockfile to prevent concurrent execution
+lockfile: /var/lock/edgemanage/edgemanage.lock
+
+# A directory containing directories containing per-domain include files. Stick
+# your MX, CNAME and non-@ A records into these files.
+zonetemplate_dir: /etc/edgemanage/zones
+
+# Number of edges to keep as the @ record in DNS.
+edge_count: 4
+
+# Number of edges to keep as @ per-dnet
+dnet_edge_count:
+  dnet1: 4
+
+# Directory to write completed, full DNS zone files to. Shared with the bind
+# container as a named volume.
+named_dir: /var/cache/bind/
+
+# File to output list of live edges to
+live_list: /var/tmp/edgemanage/edges.{dnet}.live
+
+# Canary interfaces. Values must be raw IP addresses - edge_manage validates
+# them with ipaddr.IPAddress and discards anything else. Keys must match zone
+# names present under zonetemplate_dir/{dnet}.
+canary_files: /etc/edgemanage/canaries/{dnet}
+
+# prometheus_client log file path (with trailing /)
+prometheus_logs: /var/log/prom/
+
+# Reload the bind container whenever a zone file is rewritten. run_before and
+# run_after must exist but are left empty - the stock config ships a
+# `some_command` placeholder that just logs an error every run.
+commands:
+  run_after_changes:
+    - rndc -s bind -p 953 -k /etc/edgemanage/rndc.key reload
+  run_after:
+  run_before:

@@ -1,0 +1,8 @@
+# Edge list for the dnet1 network. These are compose service names, resolved by
+# Docker's embedded DNS via socket.gethostbyname in edgetest.py.
+edge1
+edge2
+edge3
+edge4
+edge5
+edge6

@@ -1,0 +1,187 @@
+# Local edgemanage test harness. See docker/README.md.
+#
+#   docker compose build && docker compose up -d
+#   docker compose logs -f edgemanage
+#   dig @127.0.0.1 -p 5354 test.local +short
+
+x-origin: &origin
+  build:
+    context: .
+    dockerfile: docker/origin/Dockerfile
+  restart: unless-stopped
+  networks:
+    edgenet:
+
+services:
+
+  # ---- edges -------------------------------------------------------------
+  # DELAY is the response time in seconds; goodenough is 0.700, so edge1-edge4
+  # are healthy, edge5 is slow enough to be demoted and edge6 is broken.
+
+  edge1:
+    <<: *origin
+    container_name: em-edge1
+    environment:
+      EDGE_NAME: edge1
+      DELAY: "0.02"
+      MODE: ok
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.11
+
+  edge2:
+    <<: *origin
+    container_name: em-edge2
+    environment:
+      EDGE_NAME: edge2
+      DELAY: "0.05"
+      MODE: ok
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.12
+
+  edge3:
+    <<: *origin
+    container_name: em-edge3
+    environment:
+      EDGE_NAME: edge3
+      DELAY: "0.1"
+      MODE: ok
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.13
+
+  edge4:
+    <<: *origin
+    container_name: em-edge4
+    environment:
+      EDGE_NAME: edge4
+      DELAY: "0.4"
+      MODE: ok
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.14
+
+  # Over goodenough: stays in the pool but drops to a lower health tier.
+  edge5:
+    <<: *origin
+    container_name: em-edge5
+    environment:
+      EDGE_NAME: edge5
+      DELAY: "3"
+      MODE: ok
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.15
+
+  # MODE=500 -> FetchFailed -> health "fail". Other options: corrupt, hang, close.
+  edge6:
+    <<: *origin
+    container_name: em-edge6
+    environment:
+      EDGE_NAME: edge6
+      DELAY: "0"
+      MODE: "500"
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.16
+
+  # ---- canaries ----------------------------------------------------------
+  # Referenced by IP from docker/conf/canaries/dnet1. canary1 displaces one live
+  # edge in test.local; canary2 fails verification and is therefore never
+  # substituted into example.local.
+
+  # DELAY is 1.5 on purpose, not something faster. make_edges_live() only
+  # substitutes a canary whose health is exactly "pass" or "pass_window" - a
+  # canary quick enough to land in "pass_threshold" is skipped. A steady delay
+  # above goodenough (0.700) but below FETCH_TIMEOUT (10) is what puts it in
+  # "pass". See docker/README.md.
+  canary1:
+    <<: *origin
+    container_name: em-canary1
+    environment:
+      EDGE_NAME: canary1
+      DELAY: "1.5"
+      MODE: ok
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.101
+
+  canary2:
+    <<: *origin
+    container_name: em-canary2
+    environment:
+      EDGE_NAME: canary2
+      DELAY: "0.02"
+      MODE: corrupt
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.102
+
+  # ---- bind --------------------------------------------------------------
+
+  bind:
+    build:
+      context: .
+      dockerfile: docker/bind/Dockerfile
+    container_name: em-bind
+    restart: unless-stopped
+    ports:
+      - "5354:53/udp"
+      - "5354:53/tcp"
+    volumes:
+      - named:/var/cache/bind
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.6
+
+  # ---- edgemanage --------------------------------------------------------
+
+  edgemanage:
+    build:
+      context: .
+      dockerfile: docker/edgemanage/Dockerfile
+    container_name: em-edgemanage
+    restart: unless-stopped
+    environment:
+      DNET: dnet1
+      # edge_manage refuses to run within 30s of the previous run, so anything
+      # below 30 here also needs EXTRA_ARGS: "--force".
+      RUN_INTERVAL: "60"
+      EXTRA_ARGS: ""
+    volumes:
+      # Editable install: your working tree wins over what was baked in, so
+      # changes take effect on the next loop iteration with no rebuild.
+      - ./edgemanage:/src/edgemanage:ro
+      - ./docker/conf:/etc/edgemanage:ro
+      - named:/var/cache/bind
+      - health:/var/lib/edgemanage
+      - prom:/var/log/prom
+      - livelist:/var/tmp/edgemanage
+    depends_on:
+      - bind
+      - edge1
+      - edge2
+      - edge3
+      - edge4
+      - edge5
+      - edge6
+      - canary1
+      - canary2
+    networks:
+      edgenet:
+        ipv4_address: 172.28.0.5
+
+networks:
+  edgenet:
+    name: em-edgenet
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  named:
+  health:
+  prom:
+  livelist:
