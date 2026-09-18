@@ -140,6 +140,39 @@ rebuilding, run it out of the mount:
 docker compose exec edgemanage python3 /src/edgemanage/edge_manage -A dnet1 -v -n
 ```
 
+## Running the test suite
+
+The integration tests read `conf/edgemanage.yaml` but only override some of its paths, so they
+inherit the real `prometheus_logs` (`/var/log/prom/`) and `named_dir` (`/var/cache/bind/`). Neither
+exists on a developer laptop, so those tests fail there for reasons that have nothing to do with
+the code. [docker/test/Dockerfile](test/Dockerfile) creates them, which is the point of running the
+suite in a container:
+
+```bash
+docker compose run --rm test                            # whole suite
+docker compose run --rm test pytest tests/test_edgelist.py   # one file
+docker compose run --rm test pytest -k canary -v         # one pattern
+docker compose run --rm test flake8 edgemanage tests     # lint instead
+```
+
+The service sits behind a `test` profile, so `docker compose up` ignores it, and it needs none of
+the other services: the suite spawns its own Flask server and reaches it over loopback.
+
+The image COPYs the working tree rather than bind-mounting it, so a run tests what is committed
+rather than whatever is on disk. Rebuild to pick up local edits:
+
+```bash
+docker compose build test && docker compose run --rm test
+```
+
+Dependencies come from the hash-checked locks with `--require-hashes`, so the versions under test
+are the ones in `requirements.txt`, not whatever is newest on PyPI. That is the other reason to
+prefer this over a laptop virtualenv.
+
+The wall-clock assertions (`assertLess(self.running_time, 6)` and friends) still apply in here.
+They pass with room to spare on an idle machine but are the first thing to fail if the host is
+loaded; that is a property of the tests, not a regression.
+
 ## Why `workers: 1`
 
 The harness config pins `workers: 1`. `OverrideDNS` in
@@ -154,9 +187,10 @@ Raising `workers` is the quickest way to observe that; leave it at 1 for results
 ## Differences from the production image
 
 - Base is `python:3.9-slim-bookworm`, not `debian:buster-slim`. Buster is EOL and its apt repos are
-  archived, and `requirements.txt` pins `setproctitle==1.1.10` and `ipaddr==2.2.0`, which have no
-  wheels for modern interpreters. The image installs via `setup.py`'s unpinned `install_requires`
-  instead. Python 3.9 also still ships `pkg_resources`, which `edge_manage` imports at startup.
+  archived, and `requirements.txt` pins `ipaddr==2.2.0`, which has no wheel for modern
+  interpreters. The image installs via `setup.py`'s unpinned `install_requires` instead, unlike the
+  test image, which installs the hash-checked locks. `edge_manage` imports `pkg_resources` at
+  startup, so it needs the `setuptools<81` pin the locks now carry.
 - edgemanage is installed from the local checkout, not `pip install git+https://...`.
 - A shell loop replaces cron, so logs go to stdout.
 - `testing: true` is **not** set. Every edge is its own container, so the real `Host: test.local`

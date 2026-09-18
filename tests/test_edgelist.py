@@ -2,11 +2,19 @@
 
 from __future__ import absolute_import
 import unittest
+from unittest import mock
 from .context import edgemanage
 from . import module_locator
 
 TEST_DOMAIN = "fakesite.deflect.ca"
 my_path = "{}/test_data".format(module_locator.module_path())
+
+# The IP the zone fixtures in test_data/ are written against. example.com sits
+# behind a CDN that answers with several rotating A records, so resolving it for
+# real makes the fixture comparison a coin flip depending on which one
+# gethostbyname happens to return. Pin it instead: these tests cover zone
+# rendering, not name resolution.
+EXAMPLE_COM_IP = "104.20.23.154"
 
 
 class EdgeListTest(unittest.TestCase):
@@ -58,13 +66,15 @@ class EdgeListTest(unittest.TestCase):
         a = edgemanage.EdgeList()
         a.add_edge("example.com")
         a.set_edge_live("example.com")
-        new_zone = a.generate_zone("test.com", my_path, {
-                "ns_records": ["adns1.easydns.com."],
-                "soa_mailbox": "test.derp.com",
-                "soa_nameserver": "derpderpderp.com",
-            },
-            serial_number=1234,
-        )
+        with mock.patch("edgemanage.edgelist.socket.gethostbyname",
+                        return_value=EXAMPLE_COM_IP):
+            new_zone = a.generate_zone("test.com", my_path, {
+                    "ns_records": ["adns1.easydns.com."],
+                    "soa_mailbox": "test.derp.com",
+                    "soa_nameserver": "derpderpderp.com",
+                },
+                serial_number=1234,
+            )
         with open(my_path + "/test.com.output") as known_zone_f:
             known_zone = known_zone_f.read()
         self.assertEqual(known_zone, new_zone)
@@ -73,13 +83,15 @@ class EdgeListTest(unittest.TestCase):
         a = edgemanage.EdgeList()
         a.add_edge("example.com")
         a.set_edge_live("example.com")
-        new_zone = a.generate_zone("test.zone", my_path, {
-                "ns_records": ["adns1.easydns.com."],
-                "soa_mailbox": "test.derp.com",
-                "soa_nameserver": "derpderpderp.com",
-            },
-            serial_number=1234,
-        )
+        with mock.patch("edgemanage.edgelist.socket.gethostbyname",
+                        return_value=EXAMPLE_COM_IP):
+            new_zone = a.generate_zone("test.zone", my_path, {
+                    "ns_records": ["adns1.easydns.com."],
+                    "soa_mailbox": "test.derp.com",
+                    "soa_nameserver": "derpderpderp.com",
+                },
+                serial_number=1234,
+            )
         with open(my_path + "/test.zone.output") as known_zone_f:
             known_zone = known_zone_f.read()
         self.assertEqual(known_zone, new_zone)

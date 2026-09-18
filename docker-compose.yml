@@ -172,6 +172,27 @@ services:
       edgenet:
         ipv4_address: 172.28.0.5
 
+  # ---- tests -------------------------------------------------------------
+  # One-shot test runner, not part of the running stack. It needs none of the
+  # services above -- the integration suite spawns its own Flask server and
+  # talks to it over loopback -- so it is kept out of `docker compose up` with
+  # a profile:
+  #
+  #   docker compose run --rm test
+  #   docker compose run --rm test pytest tests/test_edgelist.py
+  #
+  # The image COPYs the tree rather than mounting it, so this runs against what
+  # is committed. Re-run `docker compose build test` to pick up local edits.
+
+  test:
+    build:
+      context: .
+      dockerfile: docker/test/Dockerfile
+    profiles:
+      - test
+    networks:
+      edgenet:
+
 networks:
   edgenet:
     name: em-edgenet

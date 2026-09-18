@@ -44,8 +44,21 @@ spawn a Flask server via pexpect and shell out to `edge_manage`, so they need th
 edges), so they are flaky on loaded machines; that is expected, not a regression to "fix" by
 loosening unrelated code.
 
+They only override *some* of the paths in `conf/edgemanage.yaml`, so they inherit the real
+`prometheus_logs` (`/var/log/prom/`) and `named_dir` (`/var/cache/bind/`). Those do not exist on a
+developer laptop, so **run the suite in Docker**, which creates them
+([docker/test/Dockerfile](docker/test/Dockerfile)); all 20 tests pass there:
+
+```bash
+docker compose run --rm test                  # whole suite, ~25s
+docker compose build test                     # after editing source
+```
+
+The service is behind a `test` profile, so `docker compose up` ignores it. Do not "fix" a local
+`/var/log/prom/` failure by editing the config or the test.
+
 CI is GitHub Actions ([.github/workflows/python-app.yml](.github/workflows/python-app.yml)) on
-Python 3.6.10 running `tox`. A legacy CircleCI config is still present but the Actions workflow is
+Python 3.9.25 running `tox`. A legacy CircleCI config is still present but the Actions workflow is
 the live one.
 
 ## Architecture
