@@ -1,0 +1,17 @@
+# Direct test/lint dependencies. Not installed in production, so these float
+# rather than tracking the production freeze.
+#
+# The lock is test-requirements.txt, which is generated and must not be edited
+# by hand:
+#
+#   uv pip compile test-requirements.in -o test-requirements.txt \
+#       --python-version 3.9 --generate-hashes -c requirements.txt
+#
+# The `-c requirements.txt` keeps shared packages (Jinja2, MarkupSafe, ...) at
+# the versions the runtime lock already chose.
+flake8
+Flask
+pexpect
+pylint
+pytest
+pytest-cov

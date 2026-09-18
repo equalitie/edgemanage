@@ -1,0 +1,11 @@
+# Transitive dependency pins, taken from the production `pip freeze` snapshot
+# (2026-09-17) so the compiled lock reproduces the running server rather than
+# whatever is newest on PyPI.
+#
+# Applied via `-c constraints.txt` in requirements.in. Delete an entry here to
+# let uv float that package on the next compile.
+certifi==2024.12.14
+charset-normalizer==3.4.1
+idna==3.10
+MarkupSafe==2.1.5
+urllib3==2.0.7

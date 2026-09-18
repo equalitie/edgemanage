@@ -10,6 +10,43 @@ If installing on a Debian-based system, you'll probably need to do
 Alternatively, if using `pip`, simply run `pip install -r
 requirements.txt`.
 
+`requirements.txt` is a fully pinned, hash-checked lock file, so that
+command installs exactly the versions edgemanage is tested against. It
+needs no extra tooling -- plain `pip` is enough.
+
+Dependency locking
+--------
+
+The lock files are generated with [uv](https://github.com/astral-sh/uv)
+and committed. The hand-edited sources are the `.in` files; the `.txt`
+files are generated output and should not be edited directly.
+
+| File | Role |
+|---|---|
+| `requirements.in` | direct runtime dependencies |
+| `constraints.txt` | transitive pins, snapshotted from production |
+| `requirements.txt` | generated runtime lock (pinned + hashes) |
+| `test-requirements.in` | direct test/lint dependencies |
+| `test-requirements.txt` | generated test lock (pinned + hashes) |
+
+To change a dependency, edit the relevant `.in` file and recompile.
+The target is Python 3.9, matching CI and the docker image:
+
+```bash
+uv pip compile requirements.in -o requirements.txt \
+    --python-version 3.9 --generate-hashes
+
+uv pip compile test-requirements.in -o test-requirements.txt \
+    --python-version 3.9 --generate-hashes -c requirements.txt
+```
+
+Recompile the runtime lock first: the test lock constrains itself
+against it so that shared packages (Jinja2, MarkupSafe) do not diverge
+between the two.
+
+To pick up new upstream releases rather than just re-resolving, add
+`--upgrade`, or `--upgrade-package <name>` for a single one.
+
 Installation
 --------
 

@@ -1,0 +1,28 @@
+# Direct runtime dependencies of edgemanage.
+#
+# This file is the hand-edited source. The lock is requirements.txt, which is
+# generated and must not be edited by hand:
+#
+#   uv pip compile requirements.in -o requirements.txt \
+#       --python-version 3.9 --generate-hashes
+#
+# Versions are pinned to what the production server actually runs (captured
+# from `pip freeze` on 2026-09-17). Transitive pins from that same snapshot
+# live in constraints.txt.
+-c constraints.txt
+
+ipaddr==2.2.0
+Jinja2==3.1.5
+prometheus_client==0.17.1
+PyYAML==6.0.1
+requests==2.31.0
+setproctitle==1.3.3
+six==1.12.0
+
+# Not in the production freeze: pip omits setuptools from `pip freeze`, and a
+# virtualenv seeds it automatically, so the dependency has always been
+# implicit. It is real -- edge_manage imports pkg_resources at startup for
+# --version -- and without it a clean `pip install -r requirements.txt` yields
+# an edge_manage that cannot start. Capped below 81, where pkg_resources is
+# deprecated and subsequently removed (same cap the docker image relies on).
+setuptools<81

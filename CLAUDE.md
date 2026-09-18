@@ -21,6 +21,22 @@ pip install -r requirements.txt -r test-requirements.txt
 python setup.py install          # required before integration tests (see below)
 ```
 
+Dependencies are locked with [uv](https://github.com/astral-sh/uv). The `.in` files are the
+hand-edited sources and the `.txt` files are generated, pinned and hash-checked; never edit a
+`.txt` by hand. Regenerate after editing an `.in` (runtime lock first, the test lock constrains
+against it):
+
+```bash
+uv pip compile requirements.in -o requirements.txt \
+    --python-version 3.9 --generate-hashes
+uv pip compile test-requirements.in -o test-requirements.txt \
+    --python-version 3.9 --generate-hashes -c requirements.txt
+```
+
+Runtime versions are pinned to the production server's `pip freeze`, with transitive pins held in
+`constraints.txt`. `setuptools<81` is pinned deliberately: `edge_manage` imports `pkg_resources`
+at startup for `--version`, and setuptools 81 drops it. See INSTALL.md for the full workflow.
+
 Integration tests ([tests/test_edge_manage_integration.py](tests/test_edge_manage_integration.py))
 spawn a Flask server via pexpect and shell out to `edge_manage`, so they need the package
 **installed on PATH** and must run **from the repo root**: they read `conf/edgemanage.yaml` and
